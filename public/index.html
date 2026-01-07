@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Sound Transit Arrival Tracker</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>🚇 Sound Transit Tracker</h1>
+      <p class="subtitle">Real-time arrivals for Link Light Rail</p>
+    </header>
+    
+    <main>
+      <section class="station-selector">
+        <label for="station">Select Station:</label>
+        <select id="station">
+          <option value="marymoor_village">Marymoor Village</option>
+          <option value="redmond_tech">Redmond Technology</option>
+          <option value="downtown_redmond">Downtown Redmond</option>
+          <option value="bellevue_downtown">Bellevue Downtown</option>
+        </select>
+        
+        <div class="direction-toggle">
+          <button class="dir-btn active" data-direction="southbound">
+            ↓ Southbound (to Bellevue)
+          </button>
+          <button class="dir-btn" data-direction="northbound">
+            ↑ Northbound (to Redmond)
+          </button>
+        </div>
+      </section>
+      
+      <section class="arrivals-section">
+        <h2 id="station-name">Marymoor Village</h2>
+        <p id="direction-label" class="direction-label">→ Southbound to Bellevue</p>
+        
+        <div id="arrivals-list" class="arrivals-list">
+          <div class="loading">Loading arrivals...</div>
+        </div>
+        
+        <div class="last-updated">
+          Last updated: <span id="last-updated">--</span>
+          <button id="refresh-btn" class="refresh-btn">🔄 Refresh</button>
+        </div>
+      </section>
+      
+      <section class="alerts-section">
+        <h3>⚠️ Service Alerts</h3>
+        <div id="alerts-list" class="alerts-list">
+          <div class="no-alerts">No active alerts</div>
+        </div>
+      </section>
+    </main>
+    
+    <footer>
+      <p>Data from Sound Transit GTFS-RT & OneBusAway</p>
+      <p><a href="/api/docs" target="_blank">API Documentation</a></p>
+    </footer>
+  </div>
+  
+  <script src="app.js"></script>
+</body>
+</html>

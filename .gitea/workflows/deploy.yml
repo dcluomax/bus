@@ -1,0 +1,23 @@
+name: Deploy Bus Tracker
+
+on:
+  push:
+    branches: [main]
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Deploy via SSH
+        uses: appleboy/ssh-action@v1.0.0
+        with:
+          host: ${{ secrets.DEPLOY_HOST }}
+          username: ${{ secrets.SSH_USER }}
+          password: ${{ secrets.SSH_PASSWORD }}
+          script: |
+            cd /srv/apps/bus
+            docker compose down
+            docker compose build --no-cache
+            docker compose up -d
+            echo "✅ Bus Tracker deployed successfully!"
+            docker compose ps
