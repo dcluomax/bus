@@ -2,9 +2,14 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Sound Transit Arrival Tracker</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="theme-color" content="#0072CE">
+  <title>ST Tracker</title>
   <link rel="stylesheet" href="style.css">
+  <link rel="manifest" href="/manifest.json">
+  <link rel="apple-touch-icon" href="/icon-192.svg">
 </head>
 <body>
   <div class="container">
@@ -15,21 +20,21 @@
     
     <main>
       <section class="station-selector">
+        <div class="line-selector">
+          <button class="line-btn active" data-line="2_line" style="--line-color: #E31837">2 Line</button>
+          <button class="line-btn" data-line="1_line" style="--line-color: #0072CE">1 Line</button>
+        </div>
+        
         <label for="station">Select Station:</label>
         <select id="station">
-          <option value="marymoor_village">Marymoor Village</option>
-          <option value="redmond_tech">Redmond Technology</option>
-          <option value="downtown_redmond">Downtown Redmond</option>
-          <option value="bellevue_downtown">Bellevue Downtown</option>
+          <!-- Populated dynamically by app.js -->
         </select>
         
+        <div id="walk-time" class="walk-time">📍 Locating...</div>
+        
         <div class="direction-toggle">
-          <button class="dir-btn active" data-direction="southbound">
-            ↓ Southbound (to Bellevue)
-          </button>
-          <button class="dir-btn" data-direction="northbound">
-            ↑ Northbound (to Redmond)
-          </button>
+          <button class="dir-btn active" data-direction="southbound"></button>
+          <button class="dir-btn" data-direction="northbound"></button>
         </div>
       </section>
       
@@ -54,13 +59,8 @@
         </div>
       </section>
     </main>
-    
-    <footer>
-      <p>Data from Sound Transit GTFS-RT & OneBusAway</p>
-      <p><a href="/api/docs" target="_blank">API Documentation</a></p>
-    </footer>
   </div>
   
-  <script src="app.js"></script>
+  <script src="app.js?v=20260107f"></script>
 </body>
 </html>

@@ -4,7 +4,7 @@ services:
     container_name: bus-tracker
     restart: unless-stopped
     ports:
-      - "30088:3000"
+      - "30089:3000"
     environment:
       - NODE_ENV=production
       - PORT=3000

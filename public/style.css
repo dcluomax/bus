@@ -53,6 +53,37 @@ header h1 {
   margin-bottom: 20px;
 }
 
+/* Line Selector */
+.line-selector {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 15px;
+}
+
+.line-btn {
+  flex: 1;
+  padding: 10px 16px;
+  border: 2px solid var(--border);
+  border-radius: 10px;
+  background: transparent;
+  color: var(--text-muted);
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.line-btn:hover {
+  border-color: var(--line-color, var(--primary));
+  color: var(--text);
+}
+
+.line-btn.active {
+  background: var(--line-color, var(--primary));
+  border-color: var(--line-color, var(--primary));
+  color: white;
+}
+
 .station-selector label {
   display: block;
   margin-bottom: 10px;
@@ -75,6 +106,31 @@ header h1 {
 .station-selector select:focus {
   outline: none;
   border-color: var(--primary);
+}
+
+.walk-time {
+  width: 100%;
+  padding: 12px;
+  margin-bottom: 15px;
+  border: 2px solid var(--border);
+  border-radius: 10px;
+  background: rgba(0, 166, 81, 0.1);
+  color: var(--secondary);
+  font-size: 0.95rem;
+  text-align: center;
+}
+
+.walk-time.error {
+  color: var(--text-muted);
+  background: transparent;
+  border-style: dashed;
+}
+
+.walk-time.onboard {
+  background: rgba(0, 114, 206, 0.2);
+  border-color: var(--primary);
+  color: var(--primary);
+  font-weight: 600;
 }
 
 .direction-toggle {
@@ -142,8 +198,32 @@ header h1 {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  border-left: 4px solid var(--primary);
+  border-left: 4px solid var(--primary);  position: relative;
 }
+
+.arrival-card .notify-btn {
+  position: absolute;
+  right: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 1.2rem;
+  cursor: pointer;
+  opacity: 0.6;
+  transition: opacity 0.2s, transform 0.2s;
+  padding: 8px;
+}
+
+.arrival-card .notify-btn:hover {
+  opacity: 1;
+  transform: translateY(-50%) scale(1.2);
+}
+
+.arrival-card .notify-btn.scheduled {
+  opacity: 1;
+}
+
+.arrival-card .arrival-time {
+  margin-right: 40px;}
 
 .arrival-card.imminent {
   border-left-color: var(--danger);
@@ -311,4 +391,58 @@ footer a:hover {
   .countdown {
     font-size: 1.5rem;
   }
+}
+
+/* Toast notifications */
+.toast {
+  position: fixed;
+  bottom: 20px;
+  left: 50%;
+  transform: translateX(-50%) translateY(100px);
+  background: var(--card);
+  color: var(--text);
+  padding: 12px 24px;
+  border-radius: 8px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+  z-index: 1000;
+  opacity: 0;
+  transition: transform 0.3s, opacity 0.3s;
+}
+
+.toast.show {
+  transform: translateX(-50%) translateY(0);
+  opacity: 1;
+}
+
+/* PWA install prompt */
+.install-prompt {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: var(--card);
+  padding: 16px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.3);
+  z-index: 100;
+}
+
+.install-prompt button {
+  padding: 10px 20px;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 0.9rem;
+}
+
+.install-prompt .install-btn {
+  background: var(--primary);
+  color: white;
+}
+
+.install-prompt .dismiss-btn {
+  background: transparent;
+  color: var(--text-muted);
 }

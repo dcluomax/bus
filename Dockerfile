@@ -2,15 +2,18 @@ FROM node:20-alpine
 
 WORKDIR /app
 
+# Create non-root user first
+RUN addgroup -g 1001 -S nodejs && adduser -S nodejs -u 1001
+
 # Copy package files
 COPY package*.json ./
 
 # Install dependencies
-RUN npm ci --only=production
+RUN npm ci --omit=dev
 
-# Copy source code
-COPY src/ ./src/
-COPY public/ ./public/
+# Copy source code and set ownership
+COPY --chown=nodejs:nodejs src/ ./src/
+COPY --chown=nodejs:nodejs public/ ./public/
 
 # Expose port
 EXPOSE 3000
@@ -20,7 +23,6 @@ HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
   CMD wget --no-verbose --tries=1 --spider http://localhost:3000/health || exit 1
 
 # Run as non-root user
-RUN addgroup -g 1001 -S nodejs && adduser -S nodejs -u 1001
 USER nodejs
 
 CMD ["node", "src/server.js"]
