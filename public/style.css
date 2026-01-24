@@ -393,6 +393,154 @@ footer a:hover {
   }
 }
 
+/* NFC Section */
+.nfc-section {
+  background: var(--card);
+  border-radius: 16px;
+  padding: 20px;
+  margin-bottom: 20px;
+  text-align: center;
+}
+
+.nfc-btn {
+  width: 100%;
+  padding: 16px 24px;
+  font-size: 1.1rem;
+  font-weight: 600;
+  border: none;
+  border-radius: 12px;
+  background: linear-gradient(135deg, #00A651, #008844);
+  color: white;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 15px rgba(0, 166, 81, 0.3);
+}
+
+.nfc-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(0, 166, 81, 0.4);
+}
+
+.nfc-btn:active {
+  transform: translateY(0);
+}
+
+.nfc-btn.active {
+  background: linear-gradient(135deg, #0072CE, #0058a0);
+  animation: pulse-nfc 2s infinite;
+}
+
+.nfc-btn:disabled {
+  background: var(--border);
+  cursor: not-allowed;
+  box-shadow: none;
+}
+
+@keyframes pulse-nfc {
+  0%, 100% { box-shadow: 0 4px 15px rgba(0, 114, 206, 0.3); }
+  50% { box-shadow: 0 4px 25px rgba(0, 114, 206, 0.6); }
+}
+
+.nfc-status {
+  margin-top: 10px;
+  font-size: 0.85rem;
+  color: var(--text-muted);
+}
+
+.nfc-status.error {
+  color: var(--danger);
+}
+
+.nfc-status.success {
+  color: var(--secondary);
+}
+
+/* NFC Modal */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.8);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 2000;
+  opacity: 0;
+  visibility: hidden;
+  transition: all 0.3s ease;
+}
+
+.modal-overlay.show {
+  opacity: 1;
+  visibility: visible;
+}
+
+.modal-content {
+  background: var(--card);
+  border-radius: 20px;
+  padding: 40px 30px;
+  text-align: center;
+  max-width: 320px;
+  width: 90%;
+  transform: scale(0.8);
+  transition: transform 0.3s ease;
+}
+
+.modal-overlay.show .modal-content {
+  transform: scale(1);
+}
+
+.modal-icon {
+  font-size: 4rem;
+  margin-bottom: 15px;
+  animation: bounce-in 0.5s ease;
+}
+
+@keyframes bounce-in {
+  0% { transform: scale(0); }
+  50% { transform: scale(1.2); }
+  100% { transform: scale(1); }
+}
+
+.modal-title {
+  font-size: 1.5rem;
+  color: var(--secondary);
+  margin-bottom: 10px;
+}
+
+.modal-serial {
+  font-family: monospace;
+  font-size: 0.9rem;
+  color: var(--text-muted);
+  background: var(--dark);
+  padding: 8px 12px;
+  border-radius: 6px;
+  margin-bottom: 10px;
+}
+
+.modal-message {
+  color: var(--text);
+  margin-bottom: 25px;
+}
+
+.modal-close-btn {
+  padding: 14px 50px;
+  font-size: 1.1rem;
+  font-weight: 600;
+  border: none;
+  border-radius: 10px;
+  background: var(--primary);
+  color: white;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.modal-close-btn:hover {
+  background: #0058a0;
+}
+
 /* Toast notifications */
 .toast {
   position: fixed;

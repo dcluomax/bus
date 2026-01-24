@@ -7,12 +7,40 @@
   "background_color": "#0f0f1a",
   "theme_color": "#0072CE",
   "orientation": "portrait",
+  "categories": ["transportation", "utilities"],
   "icons": [
     {
       "src": "/icon-192.svg",
-      "sizes": "any",
+      "sizes": "192x192",
       "type": "image/svg+xml",
-      "purpose": "any maskable"
+      "purpose": "any"
+    },
+    {
+      "src": "/icon-512.svg",
+      "sizes": "512x512",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    },
+    {
+      "src": "/icon-192.svg",
+      "sizes": "192x192",
+      "type": "image/svg+xml",
+      "purpose": "maskable"
+    }
+  ],
+  "screenshots": [],
+  "shortcuts": [
+    {
+      "name": "2 Line Arrivals",
+      "short_name": "2 Line",
+      "description": "Check 2 Line arrival times",
+      "url": "/?line=2_line"
+    },
+    {
+      "name": "1 Line Arrivals",
+      "short_name": "1 Line",
+      "description": "Check 1 Line arrival times",
+      "url": "/?line=1_line"
     }
   ]
 }

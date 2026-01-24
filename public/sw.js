@@ -1,10 +1,14 @@
 // Service Worker for Sound Transit Tracker
-const CACHE_NAME = 'st-tracker-v1';
+const CACHE_NAME = 'st-tracker-v4';
 const urlsToCache = [
   '/',
+  '/index.html',
   '/style.css',
   '/app.js',
-  '/manifest.json'
+  '/manifest.json',
+  '/icon-192.svg',
+  '/icon-512.svg',
+  '/sounds/orca-scan.mp3'
 ];
 
 // Install - cache static assets

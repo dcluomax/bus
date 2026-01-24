@@ -58,9 +58,25 @@
           <div class="no-alerts">No active alerts</div>
         </div>
       </section>
+      
+      <section class="nfc-section">
+        <button id="nfc-enable-btn" class="nfc-btn">🔖 Enable ORCA Card Scan</button>
+        <p id="nfc-status" class="nfc-status"></p>
+      </section>
     </main>
   </div>
   
-  <script src="app.js?v=20260107f"></script>
+  <!-- NFC Scan Result Modal -->
+  <div id="nfc-modal" class="modal-overlay">
+    <div class="modal-content">
+      <div class="modal-icon">🚇</div>
+      <h2 class="modal-title">ORCA Card Scanned!</h2>
+      <p id="nfc-serial" class="modal-serial"></p>
+      <p class="modal-message">Card detected successfully</p>
+      <button id="modal-close-btn" class="modal-close-btn">OK</button>
+    </div>
+  </div>
+  
+  <script src="app.js?v=20260120b"></script>
 </body>
 </html>

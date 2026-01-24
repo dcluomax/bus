@@ -12,6 +12,8 @@ let manualSelection = false;  // User manually selected a station
 let watchId = null;     // Geolocation watch ID
 let userLat = null;
 let userLon = null;
+let nfcReader = null;   // NFC reader instance
+let scanAudio = null;   // Audio for NFC scan sound
 
 // All lines data
 const lines = {
@@ -740,6 +742,12 @@ function init() {
   // Start watching location in background (non-blocking)
   startLocationWatch();
   
+  // Setup NFC button (user must click to enable)
+  setupNFCButton();
+  
+  // Setup modal close button
+  setupModalHandlers();
+  
   // Setup event listeners
   var stationSelect = document.getElementById('station');
   var refreshBtn = document.getElementById('refresh-btn');
@@ -901,6 +909,177 @@ function showToast(message) {
       toast.remove();
     }, 300);
   }, 3000);
+}
+
+// Setup NFC button - requires user interaction to request permission
+function setupNFCButton() {
+  var nfcBtn = document.getElementById('nfc-enable-btn');
+  var nfcStatus = document.getElementById('nfc-status');
+  
+  if (!nfcBtn || !nfcStatus) return;
+  
+  // Check if Web NFC is supported
+  if (!('NDEFReader' in window)) {
+    nfcBtn.disabled = true;
+    nfcBtn.textContent = '🔖 NFC Not Supported';
+    nfcStatus.textContent = 'Web NFC requires Android Chrome with HTTPS';
+    nfcStatus.classList.add('error');
+    return;
+  }
+  
+  // Pre-load the scan audio
+  scanAudio = new Audio('/sounds/orca-scan.mp3');
+  scanAudio.preload = 'auto';
+  
+  nfcBtn.addEventListener('click', function() {
+    startNFCScan(nfcBtn, nfcStatus);
+  });
+}
+
+// Start NFC scanning (called on user button click)
+function startNFCScan(btn, statusEl) {
+  if (nfcReader) {
+    // Already scanning, stop it
+    btn.textContent = '🔖 Enable ORCA Card Scan';
+    btn.classList.remove('active');
+    statusEl.textContent = 'NFC scanning stopped';
+    statusEl.classList.remove('success');
+    nfcReader = null;
+    return;
+  }
+  
+  btn.textContent = '⏳ Requesting NFC...';
+  btn.disabled = true;
+  
+  nfcReader = new NDEFReader();
+  
+  nfcReader.scan().then(function() {
+    console.log('NFC scan started');
+    btn.disabled = false;
+    btn.textContent = '📡 Scanning... (Tap to Stop)';
+    btn.classList.add('active');
+    statusEl.textContent = '✓ NFC active - tap your ORCA card';
+    statusEl.classList.add('success');
+    statusEl.classList.remove('error');
+  }).catch(function(error) {
+    console.log('NFC scan error:', error);
+    btn.disabled = false;
+    btn.textContent = '🔖 Enable ORCA Card Scan';
+    nfcReader = null;
+    
+    if (error.name === 'NotAllowedError') {
+      statusEl.textContent = '✗ NFC permission denied - please allow in settings';
+    } else if (error.name === 'NotSupportedError') {
+      statusEl.textContent = '✗ NFC not available on this device';
+    } else {
+      statusEl.textContent = '✗ Error: ' + error.message;
+    }
+    statusEl.classList.add('error');
+    statusEl.classList.remove('success');
+  });
+  
+  nfcReader.addEventListener('reading', function(event) {
+    console.log('NFC tag detected:', event.serialNumber);
+    playOrcaScanSound();
+    showNFCModal(event.serialNumber);
+  });
+  
+  nfcReader.addEventListener('readingerror', function(event) {
+    console.log('NFC read error');
+    statusEl.textContent = '⚠ Card read error - try again';
+  });
+}
+
+// Setup modal close handlers
+function setupModalHandlers() {
+  var modal = document.getElementById('nfc-modal');
+  var closeBtn = document.getElementById('modal-close-btn');
+  
+  if (!modal || !closeBtn) return;
+  
+  closeBtn.addEventListener('click', function() {
+    hideNFCModal();
+  });
+  
+  // Close on overlay click
+  modal.addEventListener('click', function(e) {
+    if (e.target === modal) {
+      hideNFCModal();
+    }
+  });
+}
+
+// Show NFC scan result modal
+function showNFCModal(serialNumber) {
+  var modal = document.getElementById('nfc-modal');
+  var serialEl = document.getElementById('nfc-serial');
+  
+  if (!modal) return;
+  
+  if (serialEl) {
+    serialEl.textContent = 'Card ID: ' + (serialNumber || 'Unknown');
+  }
+  
+  modal.classList.add('show');
+  
+  // Vibrate if supported
+  if (navigator.vibrate) {
+    navigator.vibrate([100, 50, 100]);
+  }
+}
+
+// Hide NFC modal
+function hideNFCModal() {
+  var modal = document.getElementById('nfc-modal');
+  if (modal) {
+    modal.classList.remove('show');
+  }
+}
+
+// Play ORCA card scan sound
+function playOrcaScanSound() {
+  // Try to play the MP3 file first
+  if (scanAudio) {
+    scanAudio.currentTime = 0;
+    scanAudio.play().catch(function(error) {
+      console.log('MP3 play error, using fallback beep:', error);
+      playFallbackBeep();
+    });
+  } else {
+    playFallbackBeep();
+  }
+}
+
+// Fallback beep sound using Web Audio API (works even without MP3 file)
+function playFallbackBeep() {
+  try {
+    var audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    
+    // Create a pleasant double-beep like ORCA readers
+    var frequencies = [880, 1100]; // Two ascending tones
+    var duration = 0.12;
+    var gap = 0.05;
+    
+    frequencies.forEach(function(freq, index) {
+      var oscillator = audioCtx.createOscillator();
+      var gainNode = audioCtx.createGain();
+      
+      oscillator.connect(gainNode);
+      gainNode.connect(audioCtx.destination);
+      
+      oscillator.frequency.value = freq;
+      oscillator.type = 'sine';
+      
+      var startTime = audioCtx.currentTime + (index * (duration + gap));
+      gainNode.gain.setValueAtTime(0.3, startTime);
+      gainNode.gain.exponentialRampToValueAtTime(0.01, startTime + duration);
+      
+      oscillator.start(startTime);
+      oscillator.stop(startTime + duration);
+    });
+  } catch (e) {
+    console.log('Web Audio API error:', e);
+  }
 }
 
 // Register service worker
