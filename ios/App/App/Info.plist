@@ -50,6 +50,14 @@
 	<string>ST Tracker needs your location to show walking time to the nearest station and auto-select the closest station.</string>
 	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
 	<string>ST Tracker needs your location to show walking time to stations and provide arrival notifications.</string>
+	<!-- NFC Permissions -->
+	<key>NFCReaderUsageDescription</key>
+	<string>ST Tracker uses NFC to read your ORCA card for quick transit access.</string>
+	<key>com.apple.developer.nfc.readersession.iso7816.select-identifiers</key>
+	<array>
+		<string>A0000000041010</string>
+		<string>D2760000850101</string>
+	</array>
 	<!-- Push Notifications -->
 	<key>UIBackgroundModes</key>
 	<array>
