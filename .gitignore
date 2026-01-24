@@ -23,3 +23,25 @@ npm-debug.log*
 # OS
 .DS_Store
 Thumbs.db
+
+# Capacitor build output
+www/
+
+# Android build
+android/.gradle/
+android/app/build/
+android/build/
+android/local.properties
+android/*.iml
+android/.idea/
+
+# iOS build
+ios/App/Pods/
+ios/App/App.xcworkspace/xcuserdata/
+ios/DerivedData/
+*.xcuserstate
+
+# APK and IPA files
+*.apk
+*.aab
+*.ipa
