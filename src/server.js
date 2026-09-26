@@ -439,6 +439,20 @@ function parseTripUpdates(feed, targetStopIds) {
   return arrivals;
 }
 
+const VALID_DIRECTIONS = new Set(['southbound', 'northbound']);
+
+function validateLineAndDirection(res, line, direction) {
+  if (line && !ALL_LINES[line]) {
+    res.status(400).json({ error: 'Invalid line' });
+    return false;
+  }
+  if (direction && !VALID_DIRECTIONS.has(direction)) {
+    res.status(400).json({ error: 'Invalid direction' });
+    return false;
+  }
+  return true;
+}
+
 // API: Get all lines
 app.get('/api/lines', (req, res) => {
   const lines = Object.entries(ALL_LINES).map(([id, info]) => ({
@@ -454,7 +468,8 @@ app.get('/api/lines', (req, res) => {
 // API: Get stations list for a line
 app.get('/api/stations', (req, res) => {
   const { line } = req.query;
-  const lineData = ALL_LINES[line] || ALL_LINES['2_line'];
+  if (!validateLineAndDirection(res, line)) return;
+  const lineData = line ? ALL_LINES[line] : ALL_LINES['2_line'];
   
   const stations = Object.entries(lineData.stations).map(([id, info]) => ({
     id,
@@ -473,6 +488,7 @@ app.get('/api/stations', (req, res) => {
 app.get('/api/arrivals/:stationId', async (req, res) => {
   const { stationId } = req.params;
   const { direction, line } = req.query; // direction: 'southbound' or 'northbound', line: '1_line' or '2_line'
+  if (!validateLineAndDirection(res, line, direction)) return;
   
   // Find station in the specified line or search all lines
   let station = null;
@@ -639,7 +655,8 @@ app.get('/api/docs', (req, res) => {
         description: 'Get real-time arrivals for a station',
         params: {
           stationId: 'Station ID (e.g., marymoor_village)',
-          direction: 'Optional: southbound or northbound'
+          direction: 'Optional: southbound or northbound',
+          line: 'Optional: 1_line or 2_line'
         }
       },
       {
