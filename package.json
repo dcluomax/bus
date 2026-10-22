@@ -33,7 +33,7 @@
     "phonegap-nfc": "^1.2.0"
   },
   "engines": {
-    "node": ">=18"
+    "node": ">=24.22.1 <25"
   },
   "devDependencies": {
     "typescript": "^5.9.3"
