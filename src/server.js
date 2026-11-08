@@ -302,7 +302,7 @@ const LINK_ROUTES = {
 const ALL_LINES = {
   '1_line': {
     name: '1 Line',
-    color: '#0072CE',
+    color: '#28813F',
     stations: LINK_1_LINE_STATIONS,
     directions: {
       southbound: 'Southbound (to Federal Way)',
@@ -311,7 +311,7 @@ const ALL_LINES = {
   },
   '2_line': {
     name: '2 Line',
-    color: '#E31837',
+    color: '#007CAD',
     stations: LINK_2_LINE_STATIONS,
     directions: {
       southbound: 'Southbound (to Bellevue)',

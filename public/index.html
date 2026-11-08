@@ -2,81 +2,107 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
   <meta name="apple-mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-  <meta name="theme-color" content="#0072CE">
-  <title>ST Tracker</title>
-  <link rel="stylesheet" href="style.css">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="theme-color" content="#ffffff" media="(prefers-color-scheme: light)">
+  <meta name="theme-color" content="#111418" media="(prefers-color-scheme: dark)">
+  <title>Link Arrivals</title>
+  <link rel="stylesheet" href="style.css?v=20261108">
   <link rel="manifest" href="/manifest.json">
   <link rel="apple-touch-icon" href="/icon-192.svg">
 </head>
 <body>
   <div class="container">
-    <header>
-      <h1>🚇 Sound Transit Tracker</h1>
-      <p class="subtitle">Real-time arrivals for Link Light Rail</p>
+    <header class="topbar">
+      <p class="brand">Link <span>Light Rail</span></p>
+      <nav class="line-selector" aria-label="Line">
+        <button class="line-btn active" data-line="2_line" style="--line-color: #007CAD">
+          <span class="line-mark" aria-hidden="true">2</span><span class="line-name">2 Line</span>
+        </button>
+        <button class="line-btn" data-line="1_line" style="--line-color: #28813F">
+          <span class="line-mark" aria-hidden="true">1</span><span class="line-name">1 Line</span>
+        </button>
+      </nav>
     </header>
-    
+
     <main>
-      <section class="station-selector">
-        <div class="line-selector">
-          <button class="line-btn active" data-line="2_line" style="--line-color: #E31837">2 Line</button>
-          <button class="line-btn" data-line="1_line" style="--line-color: #0072CE">1 Line</button>
+      <!-- Station name sign (ekimeihyo): name on top, previous / next stop on the line band -->
+      <section class="station-sign" aria-labelledby="station-name">
+        <div class="sign-main">
+          <span id="sign-mark" class="line-mark large" aria-hidden="true">2</span>
+          <h1 id="station-name">Marymoor Village</h1>
         </div>
-        
-        <label for="station">Select Station:</label>
-        <select id="station">
-          <!-- Populated dynamically by app.js -->
-        </select>
-        
-        <div id="walk-time" class="walk-time">📍 Locating...</div>
-        
-        <div class="direction-toggle">
+        <div class="sign-band">
+          <span id="adj-prev" class="adj adj-prev"></span>
+          <span id="adj-next" class="adj adj-next"></span>
+        </div>
+      </section>
+
+      <section class="station-selector" aria-label="Station and direction">
+        <label class="field" for="station">
+          <span class="field-label">Station</span>
+          <select id="station">
+            <!-- Populated dynamically by app.js -->
+          </select>
+        </label>
+
+        <div class="direction-toggle" role="group" aria-label="Direction">
           <button class="dir-btn active" data-direction="southbound"></button>
           <button class="dir-btn" data-direction="northbound"></button>
         </div>
+
+        <p id="walk-time" class="walk-time">Locating…</p>
       </section>
-      
-      <section class="arrivals-section">
-        <h2 id="station-name">Marymoor Village</h2>
-        <p id="direction-label" class="direction-label">→ Southbound to Bellevue</p>
-        
-        <div id="arrivals-list" class="arrivals-list">
-          <div class="loading">Loading arrivals...</div>
+
+      <section class="arrivals-section" aria-labelledby="departures-title">
+        <div class="board-head">
+          <h2 id="departures-title">Departures</h2>
+          <p id="direction-label" class="direction-label"></p>
         </div>
-        
+
+        <div class="board-cols" aria-hidden="true">
+          <span>Time</span><span>Destination</span><span class="col-min">Departs</span><span></span>
+        </div>
+
+        <div id="arrivals-list" class="arrivals-list" role="list">
+          <div class="loading">Loading arrivals…</div>
+        </div>
+
         <div class="last-updated">
-          Last updated: <span id="last-updated">--</span>
-          <button id="refresh-btn" class="refresh-btn">🔄 Refresh</button>
+          <span>Updated <span id="last-updated">--</span></span>
+          <button id="refresh-btn" class="refresh-btn">Refresh</button>
         </div>
       </section>
-      
-      <section class="alerts-section">
-        <h3>⚠️ Service Alerts</h3>
+
+      <details class="alerts-section" id="alerts-section">
+        <summary>
+          <span class="alerts-title">Service alerts</span>
+          <span id="alerts-count" class="alerts-count">None</span>
+        </summary>
         <div id="alerts-list" class="alerts-list">
           <div class="no-alerts">No active alerts</div>
         </div>
-      </section>
-      
+      </details>
+
       <section class="nfc-section">
-        <button id="nfc-enable-btn" class="nfc-btn">🔖 Enable ORCA Card Scan</button>
+        <button id="nfc-enable-btn" class="nfc-btn">Scan ORCA card</button>
         <p id="nfc-status" class="nfc-status"></p>
       </section>
     </main>
   </div>
-  
+
   <!-- NFC Scan Result Modal -->
   <div id="nfc-modal" class="modal-overlay">
-    <div class="modal-content">
-      <div class="modal-icon">🚇</div>
-      <h2 class="modal-title">ORCA Card Scanned!</h2>
+    <div class="modal-content" role="dialog" aria-modal="true" aria-labelledby="nfc-modal-title">
+      <div class="modal-icon" aria-hidden="true">ORCA</div>
+      <h2 id="nfc-modal-title" class="modal-title">Card scanned</h2>
       <p id="nfc-serial" class="modal-serial"></p>
       <p class="modal-message">Card detected successfully</p>
       <button id="modal-close-btn" class="modal-close-btn">OK</button>
     </div>
   </div>
-  
-  <script src="app.js?v=20260120b"></script>
+
+  <script src="app.js?v=20261108"></script>
 </body>
 </html>

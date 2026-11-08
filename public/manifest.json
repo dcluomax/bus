@@ -4,8 +4,8 @@
   "description": "Real-time arrivals for Link Light Rail",
   "start_url": "/",
   "display": "standalone",
-  "background_color": "#0f0f1a",
-  "theme_color": "#0072CE",
+  "background_color": "#ffffff",
+  "theme_color": "#ffffff",
   "orientation": "portrait",
   "categories": ["transportation", "utilities"],
   "icons": [

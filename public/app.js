@@ -19,10 +19,10 @@ let scanAudio = null;   // Audio for NFC scan sound
 const lines = {
   '1_line': {
     name: '1 Line',
-    color: '#0072CE',
+    color: '#28813F',
     directions: {
-      southbound: '↓ Southbound (Federal Way)',
-      northbound: '↑ Northbound (Lynnwood)'
+      southbound: 'Toward Federal Way',
+      northbound: 'Toward Lynnwood'
     },
     stationOrder: [
       'lynnwood', 'mountlake_terrace', 'shoreline_north', 'shoreline_south',
@@ -62,10 +62,10 @@ const lines = {
   },
   '2_line': {
     name: '2 Line',
-    color: '#E31837',
+    color: '#007CAD',
     directions: {
-      southbound: '↓ Southbound (Bellevue)',
-      northbound: '↑ Northbound (Redmond)'
+      southbound: 'Toward Bellevue',
+      northbound: 'Toward Redmond'
     },
     stationOrder: [
       'downtown_redmond', 'marymoor_village', 'redmond_tech', 'overlake_village',
@@ -234,11 +234,11 @@ function updateWalkTimeDisplay() {
   if (isOnboard) {
     var nextStationInfo = getNextStationETA();
     if (nextStationInfo) {
-      walkTimeEl.textContent = '🚇 On train → ' + nextStationInfo.name + ' in ~' + nextStationInfo.eta + ' min';
+      walkTimeEl.textContent = 'On board · next stop ' + nextStationInfo.name + ' in ~' + nextStationInfo.eta + ' min';
       walkTimeEl.classList.remove('error');
       walkTimeEl.classList.add('onboard');
     } else {
-      walkTimeEl.textContent = '🚇 On train';
+      walkTimeEl.textContent = 'On board';
       walkTimeEl.classList.remove('error');
       walkTimeEl.classList.add('onboard');
     }
@@ -252,21 +252,21 @@ function updateWalkTimeDisplay() {
     
     // If distance is unreasonable (>50km), something is wrong
     if (currentDistance > 50000) {
-      walkTimeEl.textContent = '📍 Location error - select manually';
+      walkTimeEl.textContent = 'Location looks wrong — choose a station';
       walkTimeEl.classList.add('error');
       return;
     }
     
     // Show distance and walk time together
     if (currentDistance > 1000) {
-      walkTimeEl.textContent = '🚶 ' + distanceKm + ' km · ' + walkMins + ' min walk';
+      walkTimeEl.textContent = walkMins + ' min walk · ' + distanceKm + ' km';
     } else {
-      walkTimeEl.textContent = '🚶 ' + distanceM + ' m · ' + walkMins + ' min walk';
+      walkTimeEl.textContent = walkMins + ' min walk · ' + distanceM + ' m';
     }
     walkTimeEl.classList.remove('error');
     walkTimeEl.classList.remove('onboard');
   } else {
-    walkTimeEl.textContent = '📍 Select station manually';
+    walkTimeEl.textContent = 'Choose a station';
     walkTimeEl.classList.add('error');
     walkTimeEl.classList.remove('onboard');
   }
@@ -362,7 +362,7 @@ function startLocationWatch() {
   
   if (!navigator.geolocation) {
     if (walkTimeEl) {
-      walkTimeEl.textContent = '📍 Location not supported';
+      walkTimeEl.textContent = 'Location not supported';
       walkTimeEl.classList.add('error');
     }
     return;
@@ -371,14 +371,14 @@ function startLocationWatch() {
   var isSecure = location.protocol === 'https:' || location.hostname === 'localhost' || location.hostname === '127.0.0.1';
   if (!isSecure) {
     if (walkTimeEl) {
-      walkTimeEl.textContent = '📍 HTTPS required for GPS';
+      walkTimeEl.textContent = 'Location needs HTTPS';
       walkTimeEl.classList.add('error');
     }
     return;
   }
   
   if (walkTimeEl) {
-    walkTimeEl.textContent = '📍 Locating...';
+    walkTimeEl.textContent = 'Locating…';
     walkTimeEl.classList.remove('error');
   }
   
@@ -398,10 +398,10 @@ function startLocationWatch() {
       );
     },
     function(error) {
-      var msg = '📍 Select station';
-      if (error.code === 1) msg = '📍 Location denied';
-      if (error.code === 2) msg = '📍 Location unavailable';
-      if (error.code === 3) msg = '📍 Location timeout';
+      var msg = 'Choose a station';
+      if (error.code === 1) msg = 'Location off — choose a station';
+      if (error.code === 2) msg = 'Location unavailable';
+      if (error.code === 3) msg = 'Location timed out';
       if (walkTimeEl) {
         walkTimeEl.textContent = msg;
         walkTimeEl.classList.add('error');
@@ -419,13 +419,13 @@ function formatCountdown(ms) {
   const seconds = Math.floor((ms % 60000) / 1000);
   
   if (minutes === 0) {
-    return seconds + 's';
+    return seconds < 30 ? 'Now' : seconds + ' s';
   } else if (minutes < 60) {
-    return minutes + 'm';
+    return minutes + ' min';
   } else {
     const hours = Math.floor(minutes / 60);
     const mins = minutes % 60;
-    return hours + 'h ' + mins + 'm';
+    return hours + ' h ' + mins + ' min';
   }
 }
 
@@ -438,8 +438,23 @@ function formatTime(timestamp) {
   });
 }
 
+// Split a clock time into "12:41" and "PM" for the departure board
+function formatTimeParts(timestamp) {
+  var parts = formatTime(timestamp).split(' ');
+  return { clock: parts[0], ampm: parts[1] || '' };
+}
+
+function escapeHtml(value) {
+  return String(value == null ? '' : value).replace(/[&<>"']/g, function(ch) {
+    return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[ch];
+  });
+}
+
+var BELL_SVG = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></svg>';
+
 // Get countdown class
 function getCountdownClass(ms) {
+  if (ms < 0) return 'departed';
   const minutes = ms / 60000;
   if (minutes <= 2) return 'imminent';
   if (minutes <= 5) return 'soon';
@@ -483,12 +498,12 @@ function scheduleNextRefresh(arrivals) {
   refreshTimeout = setTimeout(fetchArrivals, 60000);
 }
 
-// Render arrivals
+// Render arrivals as departure-board rows
 function renderArrivals(arrivals) {
   var arrivalsList = document.getElementById('arrivals-list');
   
   if (!arrivals || arrivals.length === 0) {
-    arrivalsList.innerHTML = '<div class="no-arrivals"><p>No upcoming arrivals found</p><p style="font-size: 0.8rem; margin-top: 10px;">Try selecting a different station or direction</p></div>';
+    arrivalsList.innerHTML = '<div class="no-arrivals"><p>No upcoming departures</p><p class="hint">Try another station or direction</p></div>';
     return;
   }
   
@@ -499,59 +514,79 @@ function renderArrivals(arrivals) {
     var arrival = arrivals[i];
     var timeUntil = arrival.arrivalTime - now;
     var countdownClass = getCountdownClass(timeUntil);
-    var headsign = arrival.tripHeadsign || (currentDirection === 'southbound' ? 'Bellevue' : 'Redmond');
-    var routeName = arrival.routeShortName || '2 Line';
+    var headsign = arrival.tripHeadsign || getLineData().directions[currentDirection].replace(/^Toward /, '');
+    var time = formatTimeParts(arrival.arrivalTime);
     
-    // Build status text: show real-time vs scheduled difference if available
-    var statusText = routeName;
+    // Real-time vs scheduled difference
+    var statusText = 'Scheduled';
+    var statusClass = 'status-scheduled';
     if (arrival.predicted && arrival.scheduledArrivalTime) {
-      var diffMs = arrival.arrivalTime - arrival.scheduledArrivalTime;
-      var diffMin = Math.round(diffMs / 60000);
+      var diffMin = Math.round((arrival.arrivalTime - arrival.scheduledArrivalTime) / 60000);
       if (diffMin > 0) {
-        statusText += ' • 🔴 ' + diffMin + ' min late';
+        statusText = diffMin + ' min late';
+        statusClass = 'status-late';
       } else if (diffMin < 0) {
-        statusText += ' • 🟢 ' + Math.abs(diffMin) + ' min early';
+        statusText = Math.abs(diffMin) + ' min early';
+        statusClass = 'status-early';
       } else {
-        statusText += ' • 🟢 On time';
+        statusText = 'On time';
+        statusClass = 'status-ontime';
       }
-    } else if (!arrival.predicted) {
-      statusText += ' • Scheduled';
+    } else if (arrival.predicted) {
+      statusText = 'Live';
+      statusClass = 'status-ontime';
     }
     
-    html += '<div class="arrival-card ' + countdownClass + '" data-tripid="' + arrival.tripId + '" data-arrival="' + arrival.arrivalTime + '" data-headsign="' + headsign + '">';
+    html += '<div class="arrival-card ' + countdownClass + '" role="listitem" data-tripid="' + escapeHtml(arrival.tripId) + '" data-arrival="' + arrival.arrivalTime + '" data-headsign="' + escapeHtml(headsign) + '">';
+    html += '<div class="arrival-time"><span class="clock">' + time.clock + '</span><span class="ampm">' + time.ampm + '</span></div>';
     html += '<div class="arrival-info">';
-    html += '<h3>' + headsign + '</h3>';
-    html += '<span class="route">' + statusText + '</span>';
+    html += '<h3>' + escapeHtml(headsign) + '</h3>';
+    html += '<span class="route ' + statusClass + '">' + statusText + '</span>';
     html += '</div>';
-    html += '<div class="arrival-time">';
-    html += '<div class="countdown ' + countdownClass + '" data-arrival="' + arrival.arrivalTime + '">';
-    html += formatCountdown(timeUntil);
-    html += '</div>';
-    html += '<div class="actual-time">' + formatTime(arrival.arrivalTime) + '</div>';
-    html += '</div>';
-    html += '<div class="notify-btn" title="Set reminder">🔔</div>';
+    html += '<div class="countdown ' + countdownClass + '" data-arrival="' + arrival.arrivalTime + '">' + formatCountdown(timeUntil) + '</div>';
+    html += '<button type="button" class="notify-btn" title="Remind me 2 min before" aria-label="Remind me 2 minutes before">' + BELL_SVG + '</button>';
     html += '</div>';
   }
   
   arrivalsList.innerHTML = html;
+  updateRanks();
+}
+
+// Label the first two trains still to come as "Next" / "2nd" (先発 / 次発)
+function updateRanks() {
+  var rank = 0;
+  document.querySelectorAll('#arrivals-list .arrival-card').forEach(function(card) {
+    if (card.classList.contains('departed') || rank >= 2) {
+      card.removeAttribute('data-rank');
+    } else {
+      rank += 1;
+      card.setAttribute('data-rank', String(rank));
+    }
+  });
 }
 
 // Render alerts
 function renderAlerts(alerts) {
   var alertsList = document.getElementById('alerts-list');
+  var alertsCount = document.getElementById('alerts-count');
+  var alertsSection = document.getElementById('alerts-section');
   
   // Ensure alerts is an array
   if (!alerts || !Array.isArray(alerts) || alerts.length === 0) {
     alertsList.innerHTML = '<div class="no-alerts">No active alerts</div>';
+    if (alertsCount) alertsCount.textContent = 'None';
+    if (alertsSection) alertsSection.classList.remove('has-alerts');
     return;
   }
+  if (alertsCount) alertsCount.textContent = alerts.length + (alerts.length === 1 ? ' alert' : ' alerts');
+  if (alertsSection) alertsSection.classList.add('has-alerts');
   
   var html = '';
   for (var i = 0; i < alerts.length; i++) {
     var alert = alerts[i];
     html += '<div class="alert-card">';
-    html += '<h4>' + (alert.headerText || 'Service Alert') + '</h4>';
-    html += '<p>' + (alert.descriptionText || 'No details available') + '</p>';
+    html += '<h4>' + escapeHtml(alert.headerText || 'Service alert') + '</h4>';
+    html += '<p>' + escapeHtml(alert.descriptionText || 'No details available') + '</p>';
     html += '</div>';
   }
   
@@ -564,7 +599,7 @@ function fetchArrivals(showLoading) {
   var lastUpdated = document.getElementById('last-updated');
   
   if (isFirstLoad || showLoading) {
-    arrivalsList.innerHTML = '<div class="loading">Loading arrivals...</div>';
+    arrivalsList.innerHTML = '<div class="loading">Loading arrivals…</div>';
   }
   
   fetch('/api/arrivals/' + currentStation + '?direction=' + currentDirection + '&line=' + currentLine)
@@ -586,7 +621,7 @@ function fetchArrivals(showLoading) {
     })
     .catch(function(error) {
       console.error('Error fetching arrivals:', error);
-      arrivalsList.innerHTML = '<div class="no-arrivals"><p>Error loading arrivals</p><p style="font-size: 0.8rem; margin-top: 10px;">' + error.message + '</p></div>';
+      arrivalsList.innerHTML = '<div class="no-arrivals"><p>Could not load departures</p><p class="hint">' + escapeHtml(error.message) + '</p></div>';
       if (refreshTimeout) clearTimeout(refreshTimeout);
       refreshTimeout = setTimeout(fetchArrivals, 30000);
     });
@@ -635,6 +670,7 @@ function updateCountdowns() {
     card.className = 'arrival-card ' + countdownClass;
     el.className = 'countdown ' + countdownClass;
   });
+  updateRanks();
 }
 
 // Update UI state
@@ -649,7 +685,8 @@ function updateUI() {
   
   stationSelect.value = currentStation;
   stationNameEl.textContent = stationsMap[currentStation] ? stationsMap[currentStation].name : currentStation;
-  directionLabel.textContent = lineData.directions[currentDirection];
+  directionLabel.textContent = currentDirection === 'southbound' ? 'Southbound' : 'Northbound';
+  renderStationSign(lineData, stationsMap);
   
   // Update line buttons
   lineBtns.forEach(function(btn) {
@@ -671,6 +708,31 @@ function updateUI() {
       btn.classList.remove('active');
     }
   });
+}
+
+// Station name sign: line colour, line number, previous / next stop in the direction of travel
+function renderStationSign(lineData, stationsMap) {
+  document.documentElement.style.setProperty('--line', lineData.color);
+  var mark = document.getElementById('sign-mark');
+  if (mark) mark.textContent = lineData.name.replace(/ Line$/, '');
+  
+  var order = getStationOrder();
+  var idx = order.indexOf(currentStation);
+  var step = currentDirection === 'southbound' ? 1 : -1;
+  var prevId = idx >= 0 ? order[idx - step] : null;
+  var nextId = idx >= 0 ? order[idx + step] : null;
+  var prevEl = document.getElementById('adj-prev');
+  var nextEl = document.getElementById('adj-next');
+  if (prevEl) {
+    prevEl.innerHTML = prevId && stationsMap[prevId]
+      ? '<span class="adj-label">Prev</span><span class="adj-name">' + escapeHtml(stationsMap[prevId].name) + '</span>'
+      : '';
+  }
+  if (nextEl) {
+    nextEl.innerHTML = nextId && stationsMap[nextId]
+      ? '<span class="adj-name">' + escapeHtml(stationsMap[nextId].name) + '</span><span class="adj-label">Next</span><span aria-hidden="true">→</span>'
+      : '';
+  }
 }
 
 // Populate station dropdown based on current line
@@ -796,12 +858,12 @@ function init() {
   });
   
   refreshBtn.addEventListener('click', function() {
-    refreshBtn.style.transform = 'rotate(360deg)';
-    refreshBtn.style.transition = 'transform 0.5s';
+    refreshBtn.disabled = true;
+    refreshBtn.style.opacity = '0.5';
     setTimeout(function() {
-      refreshBtn.style.transform = '';
-      refreshBtn.style.transition = '';
-    }, 500);
+      refreshBtn.disabled = false;
+      refreshBtn.style.opacity = '';
+    }, 800);
     
     fetchArrivals(true);
     fetchAlerts();
@@ -859,23 +921,23 @@ function scheduleNotification(arrivalTime, headsign, tripId, btn) {
     }
     
     // Mark button as scheduled
-    btn.textContent = '✅';
     btn.classList.add('scheduled');
+    btn.setAttribute('aria-pressed', 'true');
     
     // Store scheduled notification
     var notifId = 'train-' + tripId;
     scheduledNotifications[notifId] = {
       timeout: setTimeout(function() {
         var stationName = getStations()[currentStation] ? getStations()[currentStation].name : currentStation;
-        new Notification('🚇 Train Arriving!', {
+        new Notification('Train arriving', {
           body: headsign + ' arriving in 2 minutes at ' + stationName,
           icon: '/icon-192.png',
           tag: notifId,
           vibrate: [200, 100, 200],
           requireInteraction: true
         });
-        btn.textContent = '🔔';
         btn.classList.remove('scheduled');
+        btn.removeAttribute('aria-pressed');
         delete scheduledNotifications[notifId];
       }, delay),
       arrivalTime: arrivalTime
@@ -920,10 +982,9 @@ function setupNFCButton() {
   
   // Check if Web NFC is supported
   if (!('NDEFReader' in window)) {
-    nfcBtn.disabled = true;
-    nfcBtn.textContent = '🔖 NFC Not Supported';
-    nfcStatus.textContent = 'Web NFC requires Android Chrome with HTTPS';
-    nfcStatus.classList.add('error');
+    // Web NFC needs Android Chrome over HTTPS; hide the control elsewhere
+    var nfcSection = nfcBtn.closest('.nfc-section');
+    if (nfcSection) nfcSection.hidden = true;
     return;
   }
   
@@ -940,7 +1001,7 @@ function setupNFCButton() {
 function startNFCScan(btn, statusEl) {
   if (nfcReader) {
     // Already scanning, stop it
-    btn.textContent = '🔖 Enable ORCA Card Scan';
+    btn.textContent = 'Scan ORCA card';
     btn.classList.remove('active');
     statusEl.textContent = 'NFC scanning stopped';
     statusEl.classList.remove('success');
@@ -948,7 +1009,7 @@ function startNFCScan(btn, statusEl) {
     return;
   }
   
-  btn.textContent = '⏳ Requesting NFC...';
+  btn.textContent = 'Starting…';
   btn.disabled = true;
   
   nfcReader = new NDEFReader();
@@ -956,23 +1017,23 @@ function startNFCScan(btn, statusEl) {
   nfcReader.scan().then(function() {
     console.log('NFC scan started');
     btn.disabled = false;
-    btn.textContent = '📡 Scanning... (Tap to Stop)';
+    btn.textContent = 'Scanning · tap to stop';
     btn.classList.add('active');
-    statusEl.textContent = '✓ NFC active - tap your ORCA card';
+    statusEl.textContent = 'Hold your ORCA card to the phone';
     statusEl.classList.add('success');
     statusEl.classList.remove('error');
   }).catch(function(error) {
     console.log('NFC scan error:', error);
     btn.disabled = false;
-    btn.textContent = '🔖 Enable ORCA Card Scan';
+    btn.textContent = 'Scan ORCA card';
     nfcReader = null;
     
     if (error.name === 'NotAllowedError') {
-      statusEl.textContent = '✗ NFC permission denied - please allow in settings';
+      statusEl.textContent = 'NFC permission denied — allow it in settings';
     } else if (error.name === 'NotSupportedError') {
-      statusEl.textContent = '✗ NFC not available on this device';
+      statusEl.textContent = 'NFC not available on this device';
     } else {
-      statusEl.textContent = '✗ Error: ' + error.message;
+      statusEl.textContent = 'Error: ' + error.message;
     }
     statusEl.classList.add('error');
     statusEl.classList.remove('success');
@@ -986,7 +1047,7 @@ function startNFCScan(btn, statusEl) {
   
   nfcReader.addEventListener('readingerror', function(event) {
     console.log('NFC read error');
-    statusEl.textContent = '⚠ Card read error - try again';
+    statusEl.textContent = 'Card read error — try again';
   });
 }
 
