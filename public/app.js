@@ -911,83 +911,152 @@ function showToast(message) {
   }, 3000);
 }
 
-// Setup NFC button - requires user interaction to request permission
+// Setup NFC button - transit card mode (公交卡模拟)
+// Web NFC: uses NDEFReader.scan() to detect nearby NFC readers/tags.
+// When an external reader's RF field is detected, plays the beep sound.
 function setupNFCButton() {
   var nfcBtn = document.getElementById('nfc-enable-btn');
   var nfcStatus = document.getElementById('nfc-status');
   
   if (!nfcBtn || !nfcStatus) return;
   
-  // Check if Web NFC is supported
-  if (!('NDEFReader' in window)) {
-    nfcBtn.disabled = true;
-    nfcBtn.textContent = '🔖 NFC Not Supported';
-    nfcStatus.textContent = 'Web NFC requires Android Chrome with HTTPS';
-    nfcStatus.classList.add('error');
-    return;
-  }
-  
   // Pre-load the scan audio
   scanAudio = new Audio('/sounds/orca-scan.mp3');
   scanAudio.preload = 'auto';
   
-  nfcBtn.addEventListener('click', function() {
-    startNFCScan(nfcBtn, nfcStatus);
-  });
-}
-
-// Start NFC scanning (called on user button click)
-function startNFCScan(btn, statusEl) {
-  if (nfcReader) {
-    // Already scanning, stop it
-    btn.textContent = '🔖 Enable ORCA Card Scan';
-    btn.classList.remove('active');
-    statusEl.textContent = 'NFC scanning stopped';
-    statusEl.classList.remove('success');
-    nfcReader = null;
+  // Check if running in Capacitor (native app) — use HCE instead
+  var isNative = typeof Capacitor !== 'undefined' && Capacitor.isNativePlatform();
+  
+  if (isNative) {
+    // Native mode — HCE card emulation via CardEmulationService
+    nfcBtn.textContent = '💳 Transit Card Active';
+    nfcBtn.classList.add('active');
+    nfcStatus.textContent = '✓ HCE card emulation active — tap on reader';
+    nfcStatus.classList.add('success');
+    
+    window.addEventListener('card-tapped', function() {
+      playOrcaScanSound();
+      showNFCModal('TRANSIT-CARD');
+    });
     return;
   }
   
-  btn.textContent = '⏳ Requesting NFC...';
-  btn.disabled = true;
-  
-  nfcReader = new NDEFReader();
-  
-  nfcReader.scan().then(function() {
-    console.log('NFC scan started');
-    btn.disabled = false;
-    btn.textContent = '📡 Scanning... (Tap to Stop)';
-    btn.classList.add('active');
-    statusEl.textContent = '✓ NFC active - tap your ORCA card';
-    statusEl.classList.add('success');
-    statusEl.classList.remove('error');
-  }).catch(function(error) {
-    console.log('NFC scan error:', error);
-    btn.disabled = false;
-    btn.textContent = '🔖 Enable ORCA Card Scan';
-    nfcReader = null;
+  // ---- Web NFC mode ----
+  if (!('NDEFReader' in window)) {
+    nfcBtn.textContent = '💳 Transit Card';
+    nfcStatus.textContent = 'NFC not supported — tap button to play sound manually';
     
-    if (error.name === 'NotAllowedError') {
-      statusEl.textContent = '✗ NFC permission denied - please allow in settings';
-    } else if (error.name === 'NotSupportedError') {
-      statusEl.textContent = '✗ NFC not available on this device';
-    } else {
-      statusEl.textContent = '✗ Error: ' + error.message;
+    // Fallback: manual tap button
+    nfcBtn.addEventListener('click', function() {
+      playOrcaScanSound();
+      showNFCModal('MANUAL');
+    });
+    return;
+  }
+  
+  // Web NFC is available — use scan() to detect RF field
+  var scanning = false;
+  var tapCooldown = false; // prevent rapid repeat triggers
+  
+  nfcBtn.addEventListener('click', function() {
+    if (scanning) {
+      // Stop scanning
+      scanning = false;
+      nfcReader = null;
+      nfcBtn.textContent = '💳 Enable Transit Card';
+      nfcBtn.classList.remove('active');
+      nfcStatus.textContent = 'NFC scanning stopped';
+      nfcStatus.classList.remove('success');
+      nfcStatus.classList.add('info');
+      return;
     }
-    statusEl.classList.add('error');
-    statusEl.classList.remove('success');
+    
+    // Start NFC scan — needs user gesture (button click)
+    nfcBtn.textContent = '⏳ Starting NFC...';
+    nfcBtn.disabled = true;
+    
+    nfcReader = new NDEFReader();
+    
+    nfcReader.scan().then(function() {
+      scanning = true;
+      nfcBtn.disabled = false;
+      nfcBtn.textContent = '💳 Transit Card Active';
+      nfcBtn.classList.add('active');
+      nfcStatus.textContent = '✓ NFC listening — tap phone on reader';
+      nfcStatus.classList.add('success');
+      nfcStatus.classList.remove('error', 'info');
+      
+      console.log('Web NFC scan started — waiting for RF field');
+    }).catch(function(error) {
+      scanning = false;
+      nfcBtn.disabled = false;
+      nfcBtn.textContent = '💳 Enable Transit Card';
+      nfcReader = null;
+      
+      if (error.name === 'NotAllowedError') {
+        nfcStatus.textContent = '✗ NFC permission denied — allow in browser settings';
+      } else if (error.name === 'NotSupportedError') {
+        nfcStatus.textContent = '✗ NFC not available on this device';
+      } else {
+        nfcStatus.textContent = '✗ ' + error.message;
+      }
+      nfcStatus.classList.add('error');
+      nfcStatus.classList.remove('success');
+    });
+    
+    // When the phone detects any NFC interaction (reader RF field, tag, etc.)
+    // → play the transit card beep sound
+    nfcReader.addEventListener('reading', function(event) {
+      console.log('NFC reading event — RF field detected', event.serialNumber);
+      if (!tapCooldown) {
+        tapCooldown = true;
+        playOrcaScanSound();
+        showNFCModal('NFC-TAP');
+        // 2 second cooldown to prevent repeated triggers
+        setTimeout(function() { tapCooldown = false; }, 2000);
+      }
+    });
+    
+    // readingerror also fires when RF field is detected but can't read data
+    // — this happens when a card READER (not a tag) comes close
+    nfcReader.addEventListener('readingerror', function(event) {
+      console.log('NFC readingerror — likely a reader RF field detected');
+      if (!tapCooldown) {
+        tapCooldown = true;
+        playOrcaScanSound();
+        showNFCModal('NFC-TAP');
+        setTimeout(function() { tapCooldown = false; }, 2000);
+      }
+    });
   });
+}
+
+// Show NFC scan result modal
+function showNFCModal(cardId) {
+  var modal = document.getElementById('nfc-modal');
+  var serialEl = document.getElementById('nfc-serial');
   
-  nfcReader.addEventListener('reading', function(event) {
-    console.log('NFC tag detected:', event.serialNumber);
-    playOrcaScanSound();
-    showNFCModal(event.serialNumber);
-  });
+  if (!modal) return;
   
-  nfcReader.addEventListener('readingerror', function(event) {
-    console.log('NFC read error');
-    statusEl.textContent = '⚠ Card read error - try again';
-  });
+  if (serialEl) {
+    var now = new Date();
+    var timeStr = now.getHours().toString().padStart(2, '0') + ':' + 
+                  now.getMinutes().toString().padStart(2, '0') + ':' +
+                  now.getSeconds().toString().padStart(2, '0');
+    serialEl.textContent = 'Tap time: ' + timeStr;
+  }
+  
+  modal.classList.add('show');
+  
+  // Vibrate if supported
+  if (navigator.vibrate) {
+    navigator.vibrate([100, 50, 100]);
+  }
+  
+  // Auto-hide after 3 seconds
+  setTimeout(function() {
+    hideNFCModal();
+  }, 3000);
 }
 
 // Setup modal close handlers
@@ -1007,25 +1076,6 @@ function setupModalHandlers() {
       hideNFCModal();
     }
   });
-}
-
-// Show NFC scan result modal
-function showNFCModal(serialNumber) {
-  var modal = document.getElementById('nfc-modal');
-  var serialEl = document.getElementById('nfc-serial');
-  
-  if (!modal) return;
-  
-  if (serialEl) {
-    serialEl.textContent = 'Card ID: ' + (serialNumber || 'Unknown');
-  }
-  
-  modal.classList.add('show');
-  
-  // Vibrate if supported
-  if (navigator.vibrate) {
-    navigator.vibrate([100, 50, 100]);
-  }
 }
 
 // Hide NFC modal

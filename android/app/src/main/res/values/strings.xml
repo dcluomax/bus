@@ -4,4 +4,6 @@
     <string name="title_activity_main">ST Tracker</string>
     <string name="package_name">com.maxluo.sttracker</string>
     <string name="custom_url_scheme">com.maxluo.sttracker</string>
+    <string name="hce_service_description">Transit Card Emulation</string>
+    <string name="hce_aid_group_description">Transit Card AIDs</string>
 </resources>

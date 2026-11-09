@@ -60,19 +60,19 @@
       </section>
       
       <section class="nfc-section">
-        <button id="nfc-enable-btn" class="nfc-btn">🔖 Enable ORCA Card Scan</button>
-        <p id="nfc-status" class="nfc-status"></p>
+        <button id="nfc-enable-btn" class="nfc-btn">� Enable Transit Card</button>
+        <p id="nfc-status" class="nfc-status">Simulate a bus card — tap phone on reader</p>
       </section>
     </main>
   </div>
   
-  <!-- NFC Scan Result Modal -->
+  <!-- NFC Card Emulation Modal -->
   <div id="nfc-modal" class="modal-overlay">
     <div class="modal-content">
-      <div class="modal-icon">🚇</div>
-      <h2 class="modal-title">ORCA Card Scanned!</h2>
+      <div class="modal-icon">💳</div>
+      <h2 class="modal-title">Card Tapped!</h2>
       <p id="nfc-serial" class="modal-serial"></p>
-      <p class="modal-message">Card detected successfully</p>
+      <p class="modal-message">Transit card read by fare reader ✓</p>
       <button id="modal-close-btn" class="modal-close-btn">OK</button>
     </div>
   </div>
