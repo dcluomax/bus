@@ -29,6 +29,9 @@
 
 @media (prefers-color-scheme: dark) {
   .alerts-section.has-alerts .alerts-count { color: #f2c14e; }
+  .board { --board-bg: #090b0d; box-shadow: 0 0 0 1px var(--rule-strong); }
+  .tt-mark,
+  .tt-legend b { color: color-mix(in srgb, var(--line) 55%, #fff); }
   :root {
     --ink: #eef0f2;
     --ink-2: #b3b9c0;
@@ -167,8 +170,7 @@ button { cursor: pointer; }
 }
 
 .sign-band {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
+  display: flex;
   background: var(--line);
   color: #fff;
   font-size: 0.82rem;
@@ -177,6 +179,7 @@ button { cursor: pointer; }
 }
 
 .adj {
+  flex: 1 1 0;
   display: flex;
   align-items: center;
   min-width: 0;
@@ -190,7 +193,7 @@ button { cursor: pointer; }
   text-overflow: ellipsis;
 }
 
-.adj:empty { padding: 0; }
+.adj:empty { display: none; }
 
 .adj-prev { opacity: 0.8; }
 
@@ -198,6 +201,86 @@ button { cursor: pointer; }
   justify-content: flex-end;
   border-left: 1px solid rgba(255, 255, 255, 0.35);
 }
+
+.adj-prev:empty + .adj-next { border-left: 0; }
+
+/* ---------- route diagram (rosenzu) ---------- */
+
+.route-strip {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  row-gap: 5px;
+  padding: 0 18px 14px;
+  font-size: 0.68rem;
+  font-weight: 600;
+  color: var(--ink-3);
+}
+
+.route-strip:empty { display: none; }
+
+.rs-track {
+  grid-column: 1 / -1;
+  grid-row: 1;
+  position: relative;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  height: 18px;
+}
+
+.rs-track::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 50%;
+  height: 4px;
+  margin-top: -2px;
+  border-radius: 2px;
+  background: var(--line);
+}
+
+.rs-stop {
+  position: relative;
+  z-index: 1;
+  width: 9px;
+  height: 9px;
+  padding: 0;
+  border: 2px solid var(--line);
+  border-radius: 50%;
+  background: var(--ground);
+}
+
+/* Larger tap target without changing the drawn dot */
+.rs-stop::after {
+  content: "";
+  position: absolute;
+  inset: -8px 0;
+}
+
+.rs-stop.passed {
+  border-color: var(--rule-strong);
+  background: var(--rule-strong);
+}
+
+.rs-stop.here {
+  width: 18px;
+  height: 18px;
+  border-width: 4px;
+  box-shadow: 0 0 0 3px var(--ground);
+}
+
+.rs-stop:hover:not(.here) { background: var(--line); }
+
+.rs-end {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.rs-from { grid-row: 2; grid-column: 1; }
+.rs-to { grid-row: 2; grid-column: 2; text-align: right; color: var(--ink-2); }
 
 .adj-label {
   font-size: 0.68rem;
@@ -288,25 +371,44 @@ button { cursor: pointer; }
 .walk-time.onboard { color: var(--line); font-weight: 600; }
 .walk-time.error { color: var(--ink-3); }
 
-/* ---------- departure board ---------- */
+/* ---------- departure board (hasshahyo) ----------
+   A fixed dark panel, like a platform LED display: next three trains only. */
+
+.board {
+  --board-bg: #14171b;
+  --board-ink: #f3f4f6;
+  --board-ink-2: #a9b0b8;
+  --board-ink-3: #6f7781;
+  --board-rule: rgba(255, 255, 255, 0.09);
+  overflow: hidden;
+  border-radius: var(--radius);
+  border-top: 5px solid var(--line);
+  background: var(--board-bg);
+  color: var(--board-ink);
+  box-shadow: 0 10px 30px -18px rgba(10, 12, 15, 0.6);
+}
 
 .board-head {
   display: flex;
   align-items: baseline;
   justify-content: space-between;
   gap: 12px;
-  padding-bottom: 10px;
-  border-bottom: 3px solid var(--line);
+  padding: 14px 16px 10px;
 }
 
 .board-head h2 {
-  font-size: 1.05rem;
+  font-size: 0.78rem;
   font-weight: 800;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--board-ink-2);
 }
 
 .direction-label {
-  font-size: 0.85rem;
-  color: var(--ink-2);
+  min-width: 0;
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: var(--board-ink);
   text-align: right;
 }
 
@@ -319,56 +421,82 @@ button { cursor: pointer; }
 }
 
 .board-cols {
-  padding: 8px 4px;
-  border-bottom: 1px solid var(--rule-strong);
-  font-size: 0.68rem;
+  padding: 6px 16px;
+  border-top: 1px solid var(--board-rule);
+  border-bottom: 1px solid var(--board-rule);
+  font-size: 0.64rem;
   font-weight: 600;
-  color: var(--ink-3);
+  color: var(--board-ink-3);
   text-transform: uppercase;
-  letter-spacing: 0.08em;
+  letter-spacing: 0.1em;
 }
 
 .col-min { text-align: right; }
 
 .arrival-card {
-  padding: 12px 4px;
-  border-bottom: 1px solid var(--rule);
+  padding: 13px 16px;
+  border-bottom: 1px solid var(--board-rule);
+}
+
+/* Only the next three trains stay on the board */
+.board .arrival-card:not([data-rank]) { display: none; }
+
+.arrivals-list.all-departed::after {
+  content: "Waiting for the next departures…";
+  display: block;
+  padding: 28px 16px;
+  text-align: center;
+  font-size: 0.9rem;
+  color: var(--board-ink-2);
+  border-bottom: 1px solid var(--board-rule);
 }
 
 .arrival-time {
   display: flex;
   flex-direction: column;
+  align-items: flex-start;
   line-height: 1.1;
 }
 
 .arrival-time .clock {
-  font-size: 1.25rem;
+  font-size: 1.3rem;
   font-weight: 700;
   letter-spacing: -0.01em;
 }
 
 .arrival-time .ampm {
-  font-size: 0.66rem;
+  font-size: 0.64rem;
   font-weight: 600;
-  color: var(--ink-3);
+  color: var(--board-ink-3);
   letter-spacing: 0.06em;
 }
 
-/* "Next" / "2nd" labels, like 先発 / 次発 on Japanese boards */
-.arrival-card[data-rank="1"] .arrival-time::before,
-.arrival-card[data-rank="2"] .arrival-time::before {
-  font-size: 0.62rem;
-  font-weight: 700;
-  letter-spacing: 0.06em;
+/* "Next" / "2nd" / "3rd", like 先発 / 次発 / 次々発 */
+.arrival-card[data-rank] .arrival-time::before {
+  margin-bottom: 4px;
+  padding: 1px 5px;
+  border: 1px solid rgba(255, 255, 255, 0.28);
+  border-radius: 3px;
+  font-size: 0.58rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
   text-transform: uppercase;
-  margin-bottom: 3px;
+  color: var(--board-ink-2);
 }
 
-.arrival-card[data-rank="1"] .arrival-time::before { content: "Next"; color: var(--line); }
-.arrival-card[data-rank="2"] .arrival-time::before { content: "2nd"; color: var(--ink-3); }
+.arrival-card[data-rank="1"] .arrival-time::before {
+  content: "Next";
+  border-color: var(--line);
+  background: var(--line);
+  color: #fff;
+}
+.arrival-card[data-rank="2"] .arrival-time::before { content: "2nd"; }
+.arrival-card[data-rank="3"] .arrival-time::before { content: "3rd"; }
 
-.arrival-card[data-rank="1"] .arrival-time .clock { font-size: 1.55rem; }
-.arrival-card[data-rank="1"] .arrival-info h3 { font-size: 1.15rem; }
+.arrival-card[data-rank="1"] { padding-top: 16px; padding-bottom: 16px; }
+.arrival-card[data-rank="1"] .arrival-time .clock { font-size: 1.7rem; }
+.arrival-card[data-rank="1"] .arrival-info h3 { font-size: 1.2rem; }
+.arrival-card[data-rank="1"] .countdown { font-size: 1.2rem; }
 
 .arrival-info { min-width: 0; }
 
@@ -383,46 +511,41 @@ button { cursor: pointer; }
   overflow-wrap: anywhere;
 }
 
-
 .arrival-info .route {
   display: block;
-  font-size: 0.78rem;
-  color: var(--ink-3);
-  margin-top: 1px;
+  margin-top: 2px;
+  font-size: 0.76rem;
+  color: var(--board-ink-2);
 }
 
-.route.status-late { color: var(--late); font-weight: 600; }
-.route.status-early,
-.route.status-ontime { color: var(--early); }
+.board .route.status-late { color: #ff7a7a; font-weight: 600; }
+.board .route.status-early,
+.board .route.status-ontime { color: #6bd894; }
 
 .countdown {
   text-align: right;
-  font-size: 1rem;
+  font-size: 1.02rem;
   font-weight: 700;
   white-space: nowrap;
 }
 
-.countdown.soon { color: var(--soon); }
+.board .countdown.soon { color: #ffb454; }
 
 .countdown.departed {
-  color: var(--ink-3);
+  color: var(--board-ink-3);
   font-size: 0.8rem;
   font-weight: 600;
 }
 
-.arrival-card.departed .arrival-time,
-.arrival-card.departed .arrival-info { opacity: 0.45; }
-.arrival-card.departed .notify-btn { visibility: hidden; }
-
-.countdown.imminent {
-  color: var(--late);
+.board .countdown.imminent {
+  color: #ff6464;
   animation: blink 1.6s steps(2, start) infinite;
 }
 
 @keyframes blink { to { opacity: 0.35; } }
 
 @media (prefers-reduced-motion: reduce) {
-  .countdown.imminent { animation: none; }
+  .board .countdown.imminent { animation: none; }
 }
 
 .notify-btn {
@@ -433,56 +556,186 @@ button { cursor: pointer; }
   border: 1px solid transparent;
   border-radius: 8px;
   background: transparent;
-  color: var(--ink-3);
+  color: var(--board-ink-3);
 }
 
 .notify-btn svg { width: 18px; height: 18px; }
-.notify-btn:hover { color: var(--ink); border-color: var(--rule-strong); }
+.notify-btn:hover { color: var(--board-ink); border-color: rgba(255, 255, 255, 0.25); }
 
-.notify-btn.scheduled {
+.notify-btn.scheduled,
+.notify-btn.scheduled:hover {
   color: #fff;
   background: var(--line);
   border-color: var(--line);
 }
 
-.loading,
-.no-arrivals {
-  padding: 28px 4px;
-  color: var(--ink-3);
+.board .loading,
+.board .no-arrivals {
+  padding: 30px 16px;
+  color: var(--board-ink-2);
   font-size: 0.9rem;
   text-align: center;
-  border-bottom: 1px solid var(--rule);
+  border-bottom: 1px solid var(--board-rule);
 }
 
 .no-arrivals .hint {
-  font-size: 0.8rem;
   margin-top: 6px;
+  font-size: 0.8rem;
+  color: var(--board-ink-3);
 }
 
 .last-updated {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 10px 4px 0;
-  font-size: 0.75rem;
-  color: var(--ink-3);
+  padding: 10px 16px 12px;
+  font-size: 0.72rem;
+  color: var(--board-ink-3);
 }
 
 .refresh-btn {
   padding: 5px 12px;
-  border: 1px solid var(--rule-strong);
+  border: 1px solid rgba(255, 255, 255, 0.2);
   border-radius: 999px;
   background: transparent;
-  font-size: 0.75rem;
+  font-size: 0.72rem;
   font-weight: 600;
-  color: var(--ink-2);
+  color: var(--board-ink-2);
 }
 
-.refresh-btn:hover { border-color: var(--ink-3); color: var(--ink); }
+.refresh-btn:hover { border-color: rgba(255, 255, 255, 0.45); color: var(--board-ink); }
+
+/* ---------- hourly timetable (jikokuhyo) ---------- */
+
+.timetable {
+  margin-top: 22px;
+  overflow: hidden;
+  border: 1px solid var(--rule);
+  border-radius: var(--radius);
+}
+
+.timetable[hidden] { display: none; }
+
+.tt-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 14px 10px;
+  border-bottom: 2px solid var(--line);
+}
+
+.tt-head h2 {
+  font-size: 1.02rem;
+  font-weight: 800;
+}
+
+.tt-sub {
+  font-size: 0.72rem;
+  color: var(--ink-3);
+}
+
+.tt-row {
+  display: grid;
+  grid-template-columns: 58px minmax(0, 1fr);
+  border-bottom: 1px solid var(--rule);
+}
+
+.tt-row:last-child { border-bottom: 0; }
+
+.tt-hour {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 6px 0;
+  background: var(--panel);
+  background: color-mix(in srgb, var(--line) 11%, var(--ground));
+  border-right: 1px solid var(--rule);
+  line-height: 1.05;
+}
+
+.tt-h {
+  font-size: 1.4rem;
+  font-weight: 800;
+}
+
+.tt-ampm {
+  font-size: 0.58rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  color: var(--ink-3);
+}
+
+.tt-mins {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 2px 4px;
+  padding: 6px 8px;
+}
+
+.notify-btn.tt-min {
+  position: relative;
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  width: auto;
+  min-width: 44px;
+  height: 44px;
+  padding: 0 6px;
+  color: var(--ink);
+  line-height: 1;
+}
+
+.tt-m {
+  font-size: 1.2rem;
+  font-weight: 700;
+}
+
+.tt-mark {
+  position: absolute;
+  top: 5px;
+  right: 3px;
+  font-size: 0.58rem;
+  font-weight: 800;
+  color: var(--line);
+}
+
+.tt-late {
+  margin-top: 2px;
+  font-size: 0.6rem;
+  font-weight: 700;
+  color: var(--late);
+}
+
+.notify-btn.tt-min:hover { color: var(--ink); border-color: var(--rule-strong); }
+
+.notify-btn.tt-min.scheduled .tt-mark,
+.notify-btn.tt-min.scheduled .tt-late { color: #fff; }
+
+.notify-btn.tt-min.past {
+  color: var(--ink-3);
+  opacity: 0.45;
+  pointer-events: none;
+}
+
+.tt-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 14px;
+  padding: 9px 14px 11px;
+  border-top: 1px solid var(--rule);
+  font-size: 0.74rem;
+  color: var(--ink-3);
+}
+
+.tt-legend b { color: var(--line); }
 
 /* ---------- alerts ---------- */
 
-.alerts-section { margin-top: 26px; }
+.alerts-section { margin-top: 22px; }
 
 .alerts-section summary {
   display: flex;
@@ -512,8 +765,7 @@ button { cursor: pointer; }
 .alerts-section[open] summary::after { transform: rotate(-135deg) translateY(-2px); }
 .alerts-section[open] summary { border-bottom-left-radius: 0; border-bottom-right-radius: 0; }
 
-.alerts-title,
-.nfc-section .nfc-btn {
+.alerts-title {
   font-size: 0.75rem;
   font-weight: 700;
   color: var(--ink-3);
@@ -563,33 +815,60 @@ button { cursor: pointer; }
   color: var(--ink-3);
 }
 
-/* ---------- ORCA / NFC (kept low-key) ---------- */
+/* ---------- transit card (ORCA emulation) ---------- */
 
 .nfc-section {
-  margin-top: 28px;
-  padding-top: 16px;
-  border-top: 1px solid var(--rule);
-  text-align: center;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 12px;
+  margin-top: 14px;
+  padding: 12px 12px 12px 14px;
+  border: 1px solid var(--rule);
+  border-radius: var(--radius);
+}
+
+/* Small fare-card glyph in the line colour */
+.nfc-section::before {
+  content: "";
+  width: 38px;
+  height: 26px;
+  border-radius: 5px;
+  background:
+    linear-gradient(var(--ground), var(--ground)) 6px 7px / 9px 7px no-repeat,
+    var(--line);
+  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.08);
 }
 
 .nfc-btn {
-  padding: 8px 16px;
+  grid-column: 3;
+  grid-row: 1;
+  padding: 8px 14px;
   border: 1px solid var(--rule-strong);
   border-radius: 999px;
   background: transparent;
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: var(--ink);
+  white-space: nowrap;
 }
 
+.nfc-btn:hover { border-color: var(--line); }
+
 .nfc-btn.active {
-  color: var(--line);
+  color: #fff;
   border-color: var(--line);
+  background: var(--line);
 }
 
 .nfc-btn:disabled { opacity: 0.5; cursor: default; }
 
 .nfc-status {
-  margin-top: 8px;
+  grid-column: 2;
+  grid-row: 1;
   font-size: 0.78rem;
-  color: var(--ink-3);
+  line-height: 1.35;
+  color: var(--ink-2);
 }
 
 .nfc-status.error { color: var(--late); }
@@ -719,7 +998,8 @@ button { cursor: pointer; }
 @media (max-width: 380px) {
   .board-cols,
   .arrival-card { grid-template-columns: 58px minmax(0, 1fr) 58px 30px; column-gap: 8px; }
-  .arrival-card[data-rank="1"] .arrival-time .clock { font-size: 1.35rem; }
+  .arrival-card[data-rank="1"] .arrival-time .clock { font-size: 1.45rem; }
+  .board-cols, .arrival-card { padding-left: 12px; padding-right: 12px; }
   .line-name { display: none; }
   .line-btn { padding: 5px; }
 }

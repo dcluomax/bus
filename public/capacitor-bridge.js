@@ -20,9 +20,27 @@
   const { SplashScreen } = Capacitor.Plugins;
   
   // NFC variables
-  let nfcEnabled = false;
+  let cardEmulationEnabled = true;
   let nfcListeners = [];
   
+  // Card Emulation (HCE) support for Android
+  // The CardEmulationService runs natively — this bridge listens for
+  // broadcast events and forwards them to the WebView.
+  function setupCardEmulation() {
+    console.log('Setting up HCE card emulation bridge');
+    
+    // Listen for CARD_TAPPED broadcast from CardEmulationService
+    // The native service sends a broadcast when a reader taps the phone
+    if (typeof Capacitor !== 'undefined') {
+      // Register a broadcast receiver via Capacitor plugin or custom bridge
+      // For now, we use a polling approach + the JavaScript event bridge
+      
+      // The MainActivity will forward the broadcast to WebView
+      // by calling window.dispatchEvent(new Event('card-tapped'))
+      console.log('HCE bridge ready — waiting for card tap events');
+    }
+  }
+
   // Override geolocation with Capacitor's native implementation
   if (Geolocation) {
     // Store original functions
@@ -77,53 +95,22 @@
     };
   }
   
-  // Native NFC handling for Android
-  function setupNativeNFC() {
-    // Listen for NFC tag discovered via Android Intent
-    document.addEventListener('deviceready', () => {
-      if (typeof nfc !== 'undefined') {
-        console.log('Native NFC available');
-        
-        // Add NFC tag discovered listener
-        nfc.addNdefListener(
-          onNfcTag,
-          () => console.log('NFC NDEF listener added'),
-          (error) => console.log('NFC NDEF listener error:', error)
-        );
-        
-        nfc.addTagDiscoveredListener(
-          onNfcTag,
-          () => console.log('NFC tag listener added'),
-          (error) => console.log('NFC tag listener error:', error)
-        );
-        
-        nfc.addMimeTypeListener(
-          'application/vnd.orca.card',
-          onNfcTag,
-          () => console.log('NFC ORCA listener added'),
-          (error) => console.log('NFC ORCA listener error:', error)
-        );
-        
-        nfcEnabled = true;
-      }
-    }, false);
+  // Set card emulation active/inactive
+  function setCardEmulation(active) {
+    cardEmulationEnabled = active;
+    console.log('Card emulation ' + (active ? 'enabled' : 'disabled'));
+    // The native CardEmulationService.setEmulationActive() would be called
+    // via a Capacitor plugin in production — for now, state is tracked in JS
   }
   
-  // Handle NFC tag scan
-  function onNfcTag(nfcEvent) {
-    console.log('NFC tag detected:', nfcEvent);
+  // Handle card tap event (called from MainActivity when broadcast received)
+  function onCardTapped() {
+    console.log('Card tapped by reader!');
     
-    let serialNumber = 'Unknown';
-    
-    if (nfcEvent.tag) {
-      // Get serial number from tag
-      if (nfcEvent.tag.id) {
-        serialNumber = nfc.bytesToHexString(nfcEvent.tag.id);
-      }
+    if (!cardEmulationEnabled) {
+      console.log('Card emulation disabled, ignoring tap');
+      return;
     }
-    
-    // Play sound
-    playNfcSound();
     
     // Vibrate
     if (Haptics) {
@@ -132,20 +119,20 @@
       navigator.vibrate([100, 50, 100]);
     }
     
-    // Show modal popup
-    showNfcPopup(serialNumber);
+    // Dispatch event for the WebView app.js to handle
+    window.dispatchEvent(new Event('card-tapped'));
     
     // Notify any registered listeners
     nfcListeners.forEach(callback => {
       try {
-        callback({ serialNumber });
+        callback({ type: 'card-tapped', timestamp: Date.now() });
       } catch (e) {
         console.error('NFC listener error:', e);
       }
     });
   }
   
-  // Play NFC scan sound
+  // Play NFC scan sound (kept for WebView demo mode)
   function playNfcSound() {
     try {
       const audio = new Audio('sounds/orca-scan.mp3');
@@ -190,21 +177,23 @@
     }
   }
   
-  // Show NFC popup modal
-  function showNfcPopup(serialNumber) {
+  // Show card tap notification in modal
+  function showCardTapNotification() {
     const modal = document.getElementById('nfc-modal');
     const serialEl = document.getElementById('nfc-serial');
     
     if (modal) {
       if (serialEl) {
-        serialEl.textContent = 'Card ID: ' + serialNumber;
+        const now = new Date();
+        const timeStr = now.toLocaleTimeString();
+        serialEl.textContent = 'Tap time: ' + timeStr;
       }
       modal.classList.add('show');
       
-      // Auto-hide after 5 seconds
+      // Auto-hide after 3 seconds
       setTimeout(() => {
         modal.classList.remove('show');
-      }, 5000);
+      }, 3000);
     }
   }
   
@@ -284,7 +273,7 @@
     await setupStatusBar();
     await setupPushNotifications();
     addHapticFeedback();
-    setupNativeNFC();
+    setupCardEmulation();
     
     // Hide splash after a short delay
     setTimeout(hideSplash, 500);
@@ -293,14 +282,16 @@
   // Expose native functions globally
   window.STNative = {
     isCapacitor: true,
-    nfcEnabled: () => nfcEnabled,
+    cardEmulationEnabled: () => cardEmulationEnabled,
+    setCardEmulation: setCardEmulation,
     haptic: (style = 'MEDIUM') => {
       if (Haptics) Haptics.impact({ style });
     },
+    onCardTapped: onCardTapped,
     onNfcScan: (callback) => {
       nfcListeners.push(callback);
     },
     playNfcSound: playNfcSound,
-    showNfcPopup: showNfcPopup
+    showCardTapNotification: showCardTapNotification
   };
 })();

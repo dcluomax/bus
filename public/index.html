@@ -8,7 +8,7 @@
   <meta name="theme-color" content="#ffffff" media="(prefers-color-scheme: light)">
   <meta name="theme-color" content="#111418" media="(prefers-color-scheme: dark)">
   <title>Link Arrivals</title>
-  <link rel="stylesheet" href="style.css?v=20261108">
+  <link rel="stylesheet" href="style.css?v=20261108b">
   <link rel="manifest" href="/manifest.json">
   <link rel="apple-touch-icon" href="/icon-192.svg">
 </head>
@@ -33,6 +33,7 @@
           <span id="sign-mark" class="line-mark large" aria-hidden="true">2</span>
           <h1 id="station-name">Marymoor Village</h1>
         </div>
+        <div id="route-strip" class="route-strip" role="group" aria-label="Stations on this line"></div>
         <div class="sign-band">
           <span id="adj-prev" class="adj adj-prev"></span>
           <span id="adj-next" class="adj adj-next"></span>
@@ -55,7 +56,8 @@
         <p id="walk-time" class="walk-time">Locating…</p>
       </section>
 
-      <section class="arrivals-section" aria-labelledby="departures-title">
+      <!-- Platform departure display (hasshahyo): next three trains -->
+      <section class="arrivals-section board" aria-labelledby="departures-title">
         <div class="board-head">
           <h2 id="departures-title">Departures</h2>
           <p id="direction-label" class="direction-label"></p>
@@ -75,6 +77,16 @@
         </div>
       </section>
 
+      <!-- Hour-by-hour timetable (jikokuhyo) of the live departures -->
+      <section id="timetable-section" class="timetable" aria-labelledby="tt-title" hidden>
+        <div class="tt-head">
+          <h2 id="tt-title">Timetable</h2>
+          <span class="tt-sub">Live · tap a time for a reminder</span>
+        </div>
+        <div id="timetable" class="tt-body"></div>
+        <p id="tt-legend" class="tt-legend"></p>
+      </section>
+
       <details class="alerts-section" id="alerts-section">
         <summary>
           <span class="alerts-title">Service alerts</span>
@@ -86,23 +98,23 @@
       </details>
 
       <section class="nfc-section">
-        <button id="nfc-enable-btn" class="nfc-btn">Scan ORCA card</button>
-        <p id="nfc-status" class="nfc-status"></p>
+        <button id="nfc-enable-btn" class="nfc-btn">Transit card</button>
+        <p id="nfc-status" class="nfc-status">Simulate a fare card — hold the phone to a reader</p>
       </section>
     </main>
   </div>
 
-  <!-- NFC Scan Result Modal -->
+  <!-- Transit card tap modal -->
   <div id="nfc-modal" class="modal-overlay">
     <div class="modal-content" role="dialog" aria-modal="true" aria-labelledby="nfc-modal-title">
-      <div class="modal-icon" aria-hidden="true">ORCA</div>
-      <h2 id="nfc-modal-title" class="modal-title">Card scanned</h2>
+      <div class="modal-icon" aria-hidden="true">TAP</div>
+      <h2 id="nfc-modal-title" class="modal-title">Card tapped</h2>
       <p id="nfc-serial" class="modal-serial"></p>
-      <p class="modal-message">Card detected successfully</p>
+      <p class="modal-message">Read by the fare reader</p>
       <button id="modal-close-btn" class="modal-close-btn">OK</button>
     </div>
   </div>
 
-  <script src="app.js?v=20261108"></script>
+  <script src="app.js?v=20261108b"></script>
 </body>
 </html>

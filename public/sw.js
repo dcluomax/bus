@@ -1,5 +1,5 @@
 // Service Worker for Sound Transit Tracker
-const CACHE_NAME = 'st-tracker-v5';
+const CACHE_NAME = 'st-tracker-v6';
 const urlsToCache = [
   '/',
   '/index.html',

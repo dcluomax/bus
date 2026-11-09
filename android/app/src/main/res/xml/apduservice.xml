@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?>
+<host-apdu-service xmlns:android="http://schemas.android.com/apk/res/android"
+    android:description="@string/hce_service_description"
+    android:requireDeviceUnlock="false"
+    android:requireDeviceScreenOn="false">
+    
+    <!-- 
+        AID group for transit card emulation.
+        Category "other" means this is a non-payment card.
+        The phone will respond when any NFC reader SELECTs these AIDs.
+    -->
+    <aid-group
+        android:category="other"
+        android:description="@string/hce_aid_group_description">
+        
+        <!-- Proprietary transit card AID -->
+        <aid-filter android:name="F0010203040506" />
+        
+        <!-- 
+            Standard transit/transportation AIDs that bus card readers commonly use.
+            Adding multiple AIDs increases the chance that a generic reader will select us.
+        -->
+        <!-- Calypso transport AID -->
+        <aid-filter android:name="315449432E49434131" />
+        
+        <!-- Generic NFC Forum Type 4 Tag AID (NDEF) -->
+        <aid-filter android:name="D276000085010100" />
+        
+    </aid-group>
+</host-apdu-service>

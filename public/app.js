@@ -504,6 +504,7 @@ function renderArrivals(arrivals) {
   
   if (!arrivals || arrivals.length === 0) {
     arrivalsList.innerHTML = '<div class="no-arrivals"><p>No upcoming departures</p><p class="hint">Try another station or direction</p></div>';
+    renderTimetable([]);
     return;
   }
   
@@ -549,19 +550,111 @@ function renderArrivals(arrivals) {
   }
   
   arrivalsList.innerHTML = html;
+  renderTimetable(arrivals);
+  syncReminderButtons();
   updateRanks();
 }
 
-// Label the first two trains still to come as "Next" / "2nd" (先発 / 次発)
+// The board shows the next three trains still to come (先発 / 次発 / 次々発);
+// trains that have left drop off, and past times dim in the timetable
 function updateRanks() {
   var rank = 0;
   document.querySelectorAll('#arrivals-list .arrival-card').forEach(function(card) {
-    if (card.classList.contains('departed') || rank >= 2) {
+    if (card.classList.contains('departed') || rank >= 3) {
       card.removeAttribute('data-rank');
     } else {
       rank += 1;
       card.setAttribute('data-rank', String(rank));
     }
+  });
+  var list = document.getElementById('arrivals-list');
+  list.classList.toggle('all-departed', rank === 0 && !!list.querySelector('.arrival-card'));
+  var now = Date.now();
+  document.querySelectorAll('.tt-min[data-arrival]').forEach(function(chip) {
+    chip.classList.toggle('past', parseInt(chip.dataset.arrival) < now);
+  });
+}
+
+// Destination marks for the timetable, e.g. "L" = Lynnwood City Center
+function destinationMarks(headsigns) {
+  var marks = {};
+  var used = {};
+  headsigns.forEach(function(name) {
+    if (marks[name]) return;
+    var words = name.replace(/[^A-Za-z ]/g, ' ').split(/\s+/).filter(Boolean);
+    var candidates = words.map(function(w) { return w[0].toUpperCase(); }).concat(words.join('').toUpperCase().split(''));
+    for (var i = 0; i < candidates.length; i++) {
+      if (!used[candidates[i]]) { marks[name] = candidates[i]; used[candidates[i]] = true; return; }
+    }
+    marks[name] = '?';
+  });
+  return marks;
+}
+
+// Hour-by-hour timetable: hour on the left, minutes across (時刻表)
+function renderTimetable(arrivals) {
+  var section = document.getElementById('timetable-section');
+  var body = document.getElementById('timetable');
+  var legend = document.getElementById('tt-legend');
+  if (!section || !body) return;
+  if (!arrivals || arrivals.length === 0) {
+    section.hidden = true;
+    body.innerHTML = '';
+    return;
+  }
+  
+  var fallback = getLineData().directions[currentDirection].replace(/^Toward /, '');
+  var headsigns = arrivals.map(function(a) { return a.tripHeadsign || fallback; });
+  var distinct = headsigns.filter(function(h, i) { return headsigns.indexOf(h) === i; });
+  var marks = distinct.length > 1 ? destinationMarks(distinct) : {};
+  
+  var hours = [];
+  var byHour = {};
+  arrivals.forEach(function(a, i) {
+    var d = new Date(a.arrivalTime);
+    var key = d.getFullYear() + '-' + d.getMonth() + '-' + d.getDate() + '-' + d.getHours();
+    if (!byHour[key]) { byHour[key] = { date: d, items: [] }; hours.push(key); }
+    byHour[key].items.push({ a: a, headsign: headsigns[i], minute: d.getMinutes() });
+  });
+  
+  var html = '';
+  hours.forEach(function(key) {
+    var group = byHour[key];
+    var h24 = group.date.getHours();
+    var h12 = h24 % 12 === 0 ? 12 : h24 % 12;
+    html += '<div class="tt-row">';
+    html += '<div class="tt-hour"><span class="tt-h">' + h12 + '</span><span class="tt-ampm">' + (h24 < 12 ? 'AM' : 'PM') + '</span></div>';
+    html += '<div class="tt-mins">';
+    group.items.forEach(function(item) {
+      var a = item.a;
+      var late = (a.predicted && a.scheduledArrivalTime) ? Math.round((a.arrivalTime - a.scheduledArrivalTime) / 60000) : 0;
+      var mm = (item.minute < 10 ? '0' : '') + item.minute;
+      var label = formatTime(a.arrivalTime) + ' to ' + item.headsign + (late > 0 ? ', ' + late + ' min late' : '');
+      html += '<button type="button" class="tt-min notify-btn" data-tripid="' + escapeHtml(a.tripId) + '" data-arrival="' + a.arrivalTime + '" data-headsign="' + escapeHtml(item.headsign) + '" title="' + escapeHtml(label) + '" aria-label="Remind me: ' + escapeHtml(label) + '">';
+      html += '<span class="tt-m">' + mm + '</span>';
+      if (marks[item.headsign]) html += '<sup class="tt-mark">' + marks[item.headsign] + '</sup>';
+      if (late > 0) html += '<span class="tt-late">+' + late + '</span>';
+      html += '</button>';
+    });
+    html += '</div></div>';
+  });
+  body.innerHTML = html;
+  
+  if (legend) {
+    legend.innerHTML = distinct.length > 1
+      ? distinct.map(function(name) { return '<span><b>' + marks[name] + '</b> ' + escapeHtml(name) + '</span>'; }).join('')
+      : '<span>All trains to ' + escapeHtml(distinct[0]) + '</span>';
+  }
+  section.hidden = false;
+}
+
+// Keep every reminder control for the same trip in the same state
+function syncReminderButtons() {
+  document.querySelectorAll('.notify-btn').forEach(function(btn) {
+    var host = btn.closest('[data-tripid]');
+    var on = !!(host && scheduledNotifications['train-' + host.dataset.tripid]);
+    btn.classList.toggle('scheduled', on);
+    if (on) btn.setAttribute('aria-pressed', 'true'); else btn.removeAttribute('aria-pressed');
   });
 }
 
@@ -622,6 +715,7 @@ function fetchArrivals(showLoading) {
     .catch(function(error) {
       console.error('Error fetching arrivals:', error);
       arrivalsList.innerHTML = '<div class="no-arrivals"><p>Could not load departures</p><p class="hint">' + escapeHtml(error.message) + '</p></div>';
+      renderTimetable([]);
       if (refreshTimeout) clearTimeout(refreshTimeout);
       refreshTimeout = setTimeout(fetchArrivals, 30000);
     });
@@ -721,6 +815,7 @@ function renderStationSign(lineData, stationsMap) {
   var step = currentDirection === 'southbound' ? 1 : -1;
   var prevId = idx >= 0 ? order[idx - step] : null;
   var nextId = idx >= 0 ? order[idx + step] : null;
+  renderRouteStrip(order, idx, step, stationsMap);
   var prevEl = document.getElementById('adj-prev');
   var nextEl = document.getElementById('adj-next');
   if (prevEl) {
@@ -733,6 +828,21 @@ function renderStationSign(lineData, stationsMap) {
       ? '<span class="adj-name">' + escapeHtml(stationsMap[nextId].name) + '</span><span class="adj-label">Next</span><span aria-hidden="true">→</span>'
       : '';
   }
+}
+
+// Route diagram (路線図): every station of the line in the direction of travel
+function renderRouteStrip(order, idx, step, stationsMap) {
+  var strip = document.getElementById('route-strip');
+  if (!strip) return;
+  var seq = step === 1 ? order.slice() : order.slice().reverse();
+  var pos = seq.indexOf(currentStation);
+  var html = '<span class="rs-end rs-from">' + escapeHtml(stationsMap[seq[0]].name) + '</span><span class="rs-track">';
+  seq.forEach(function(id, i) {
+    var cls = i < pos ? 'passed' : (i === pos ? 'here' : 'ahead');
+    html += '<button type="button" class="rs-stop ' + cls + '" data-station="' + id + '" title="' + escapeHtml(stationsMap[id].name) + '" aria-label="' + escapeHtml(stationsMap[id].name) + '"' + (i === pos ? ' aria-current="true"' : '') + '></button>';
+  });
+  html += '</span><span class="rs-end rs-to">' + escapeHtml(stationsMap[seq[seq.length - 1]].name) + ' →</span>';
+  strip.innerHTML = html;
 }
 
 // Populate station dropdown based on current line
@@ -869,15 +979,23 @@ function init() {
     fetchAlerts();
   });
   
+  document.getElementById('route-strip').addEventListener('click', function(e) {
+    var stop = e.target.closest('.rs-stop');
+    if (!stop || stop.dataset.station === currentStation) return;
+    var select = document.getElementById('station');
+    select.value = stop.dataset.station;
+    select.dispatchEvent(new Event('change'));
+  });
+  
   setInterval(updateCountdowns, 1000);
   setInterval(fetchAlerts, 300000);
   
   // Setup notification click handlers (delegated)
-  document.getElementById('arrivals-list').addEventListener('click', function(e) {
+  document.addEventListener('click', function(e) {
     var notifyBtn = e.target.closest('.notify-btn');
     if (!notifyBtn) return;
     
-    var card = notifyBtn.closest('.arrival-card');
+    var card = notifyBtn.closest('[data-arrival][data-tripid]');
     if (!card) return;
     
     var arrivalTime = parseInt(card.dataset.arrival);
@@ -890,6 +1008,16 @@ function init() {
 
 // Schedule notification for a train
 function scheduleNotification(arrivalTime, headsign, tripId, btn) {
+  // A second tap cancels an existing reminder
+  var existing = scheduledNotifications['train-' + tripId];
+  if (existing) {
+    clearTimeout(existing.timeout);
+    delete scheduledNotifications['train-' + tripId];
+    syncReminderButtons();
+    showToast('Reminder cancelled');
+    return;
+  }
+  
   // Request notification permission
   if (!('Notification' in window)) {
     alert('This browser does not support notifications');
@@ -936,17 +1064,17 @@ function scheduleNotification(arrivalTime, headsign, tripId, btn) {
           vibrate: [200, 100, 200],
           requireInteraction: true
         });
-        btn.classList.remove('scheduled');
-        btn.removeAttribute('aria-pressed');
         delete scheduledNotifications[notifId];
+        syncReminderButtons();
       }, delay),
       arrivalTime: arrivalTime
     };
+    syncReminderButtons();
     
     // Show confirmation
     var confirmMsg = minsUntilNotify > 0 
-      ? 'Reminder set! Will notify in ' + minsUntilNotify + ' min'
-      : 'Reminder set! Will notify shortly';
+      ? 'Reminder set · alert in ' + minsUntilNotify + ' min'
+      : 'Reminder set · alert shortly';
     showToast(confirmMsg);
   });
 }
@@ -956,6 +1084,7 @@ var scheduledNotifications = {};
 
 // Toast notification
 function showToast(message) {
+  document.querySelectorAll('.toast').forEach(function(old) { old.remove(); });
   var toast = document.createElement('div');
   toast.className = 'toast';
   toast.textContent = message;
@@ -973,82 +1102,152 @@ function showToast(message) {
   }, 3000);
 }
 
-// Setup NFC button - requires user interaction to request permission
+// Setup NFC button - transit card mode (公交卡模拟)
+// Web NFC: uses NDEFReader.scan() to detect nearby NFC readers/tags.
+// When an external reader's RF field is detected, plays the beep sound.
 function setupNFCButton() {
   var nfcBtn = document.getElementById('nfc-enable-btn');
   var nfcStatus = document.getElementById('nfc-status');
   
   if (!nfcBtn || !nfcStatus) return;
   
-  // Check if Web NFC is supported
-  if (!('NDEFReader' in window)) {
-    // Web NFC needs Android Chrome over HTTPS; hide the control elsewhere
-    var nfcSection = nfcBtn.closest('.nfc-section');
-    if (nfcSection) nfcSection.hidden = true;
-    return;
-  }
-  
   // Pre-load the scan audio
   scanAudio = new Audio('/sounds/orca-scan.mp3');
   scanAudio.preload = 'auto';
   
-  nfcBtn.addEventListener('click', function() {
-    startNFCScan(nfcBtn, nfcStatus);
-  });
-}
-
-// Start NFC scanning (called on user button click)
-function startNFCScan(btn, statusEl) {
-  if (nfcReader) {
-    // Already scanning, stop it
-    btn.textContent = 'Scan ORCA card';
-    btn.classList.remove('active');
-    statusEl.textContent = 'NFC scanning stopped';
-    statusEl.classList.remove('success');
-    nfcReader = null;
+  // Check if running in Capacitor (native app) — use HCE instead
+  var isNative = typeof Capacitor !== 'undefined' && Capacitor.isNativePlatform();
+  
+  if (isNative) {
+    // Native mode — HCE card emulation via CardEmulationService
+    nfcBtn.textContent = 'Transit card on';
+    nfcBtn.classList.add('active');
+    nfcStatus.textContent = 'Card emulation active — hold the phone to a reader';
+    nfcStatus.classList.add('success');
+    
+    window.addEventListener('card-tapped', function() {
+      playOrcaScanSound();
+      showNFCModal('TRANSIT-CARD');
+    });
     return;
   }
   
-  btn.textContent = 'Starting…';
-  btn.disabled = true;
-  
-  nfcReader = new NDEFReader();
-  
-  nfcReader.scan().then(function() {
-    console.log('NFC scan started');
-    btn.disabled = false;
-    btn.textContent = 'Scanning · tap to stop';
-    btn.classList.add('active');
-    statusEl.textContent = 'Hold your ORCA card to the phone';
-    statusEl.classList.add('success');
-    statusEl.classList.remove('error');
-  }).catch(function(error) {
-    console.log('NFC scan error:', error);
-    btn.disabled = false;
-    btn.textContent = 'Scan ORCA card';
-    nfcReader = null;
+  // ---- Web NFC mode ----
+  if (!('NDEFReader' in window)) {
+    nfcBtn.textContent = 'Transit card';
+    nfcStatus.textContent = 'No NFC here — tap the button to play the beep';
     
-    if (error.name === 'NotAllowedError') {
-      statusEl.textContent = 'NFC permission denied — allow it in settings';
-    } else if (error.name === 'NotSupportedError') {
-      statusEl.textContent = 'NFC not available on this device';
-    } else {
-      statusEl.textContent = 'Error: ' + error.message;
+    // Fallback: manual tap button
+    nfcBtn.addEventListener('click', function() {
+      playOrcaScanSound();
+      showNFCModal('MANUAL');
+    });
+    return;
+  }
+  
+  // Web NFC is available — use scan() to detect RF field
+  var scanning = false;
+  var tapCooldown = false; // prevent rapid repeat triggers
+  
+  nfcBtn.addEventListener('click', function() {
+    if (scanning) {
+      // Stop scanning
+      scanning = false;
+      nfcReader = null;
+      nfcBtn.textContent = 'Transit card';
+      nfcBtn.classList.remove('active');
+      nfcStatus.textContent = 'NFC scanning stopped';
+      nfcStatus.classList.remove('success');
+      nfcStatus.classList.add('info');
+      return;
     }
-    statusEl.classList.add('error');
-    statusEl.classList.remove('success');
+    
+    // Start NFC scan — needs user gesture (button click)
+    nfcBtn.textContent = 'Starting…';
+    nfcBtn.disabled = true;
+    
+    nfcReader = new NDEFReader();
+    
+    nfcReader.scan().then(function() {
+      scanning = true;
+      nfcBtn.disabled = false;
+      nfcBtn.textContent = 'Transit card on';
+      nfcBtn.classList.add('active');
+      nfcStatus.textContent = 'Listening — hold the phone to a reader';
+      nfcStatus.classList.add('success');
+      nfcStatus.classList.remove('error', 'info');
+      
+      console.log('Web NFC scan started — waiting for RF field');
+    }).catch(function(error) {
+      scanning = false;
+      nfcBtn.disabled = false;
+      nfcBtn.textContent = 'Transit card';
+      nfcReader = null;
+      
+      if (error.name === 'NotAllowedError') {
+        nfcStatus.textContent = 'NFC permission denied — allow it in browser settings';
+      } else if (error.name === 'NotSupportedError') {
+        nfcStatus.textContent = 'NFC not available on this device';
+      } else {
+        nfcStatus.textContent = error.message;
+      }
+      nfcStatus.classList.add('error');
+      nfcStatus.classList.remove('success');
+    });
+    
+    // When the phone detects any NFC interaction (reader RF field, tag, etc.)
+    // → play the transit card beep sound
+    nfcReader.addEventListener('reading', function(event) {
+      console.log('NFC reading event — RF field detected', event.serialNumber);
+      if (!tapCooldown) {
+        tapCooldown = true;
+        playOrcaScanSound();
+        showNFCModal('NFC-TAP');
+        // 2 second cooldown to prevent repeated triggers
+        setTimeout(function() { tapCooldown = false; }, 2000);
+      }
+    });
+    
+    // readingerror also fires when RF field is detected but can't read data
+    // — this happens when a card READER (not a tag) comes close
+    nfcReader.addEventListener('readingerror', function(event) {
+      console.log('NFC readingerror — likely a reader RF field detected');
+      if (!tapCooldown) {
+        tapCooldown = true;
+        playOrcaScanSound();
+        showNFCModal('NFC-TAP');
+        setTimeout(function() { tapCooldown = false; }, 2000);
+      }
+    });
   });
+}
+
+// Show NFC scan result modal
+function showNFCModal(cardId) {
+  var modal = document.getElementById('nfc-modal');
+  var serialEl = document.getElementById('nfc-serial');
   
-  nfcReader.addEventListener('reading', function(event) {
-    console.log('NFC tag detected:', event.serialNumber);
-    playOrcaScanSound();
-    showNFCModal(event.serialNumber);
-  });
+  if (!modal) return;
   
-  nfcReader.addEventListener('readingerror', function(event) {
-    console.log('NFC read error');
-    statusEl.textContent = 'Card read error — try again';
-  });
+  if (serialEl) {
+    var now = new Date();
+    var timeStr = now.getHours().toString().padStart(2, '0') + ':' + 
+                  now.getMinutes().toString().padStart(2, '0') + ':' +
+                  now.getSeconds().toString().padStart(2, '0');
+    serialEl.textContent = 'Tap time: ' + timeStr;
+  }
+  
+  modal.classList.add('show');
+  
+  // Vibrate if supported
+  if (navigator.vibrate) {
+    navigator.vibrate([100, 50, 100]);
+  }
+  
+  // Auto-hide after 3 seconds
+  setTimeout(function() {
+    hideNFCModal();
+  }, 3000);
 }
 
 // Setup modal close handlers
@@ -1068,25 +1267,6 @@ function setupModalHandlers() {
       hideNFCModal();
     }
   });
-}
-
-// Show NFC scan result modal
-function showNFCModal(serialNumber) {
-  var modal = document.getElementById('nfc-modal');
-  var serialEl = document.getElementById('nfc-serial');
-  
-  if (!modal) return;
-  
-  if (serialEl) {
-    serialEl.textContent = 'Card ID: ' + (serialNumber || 'Unknown');
-  }
-  
-  modal.classList.add('show');
-  
-  // Vibrate if supported
-  if (navigator.vibrate) {
-    navigator.vibrate([100, 50, 100]);
-  }
 }
 
 // Hide NFC modal
