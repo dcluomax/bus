@@ -25,7 +25,7 @@ const lines = {
       northbound: 'Toward Lynnwood'
     },
     stationOrder: [
-      'lynnwood', 'mountlake_terrace', 'shoreline_north', 'shoreline_south',
+      'lynnwood', 'mountlake_terrace', 'shoreline_north', 'shoreline_south', 'pinehurst',
       'northgate', 'roosevelt', 'u_district', 'uw', 'capitol_hill',
       'westlake', 'symphony', 'pioneer_square', 'chinatown', 'stadium', 'sodo',
       'beacon_hill', 'mount_baker', 'columbia_city', 'othello', 'rainier_beach',
@@ -36,6 +36,7 @@ const lines = {
       'mountlake_terrace': { name: 'Mountlake Terrace', lat: 47.785057, lon: -122.314788 },
       'shoreline_north': { name: 'Shoreline North/185th', lat: 47.764067, lon: -122.322889 },
       'shoreline_south': { name: 'Shoreline South/148th', lat: 47.736095, lon: -122.325227 },
+      'pinehurst': { name: 'Pinehurst', lat: 47.724043, lon: -122.323851 },
       'northgate': { name: 'Northgate', lat: 47.703028, lon: -122.32829 },
       'roosevelt': { name: 'Roosevelt', lat: 47.676595, lon: -122.315976 },
       'u_district': { name: 'U District', lat: 47.660301, lon: -122.314132 },
@@ -64,24 +65,44 @@ const lines = {
     name: '2 Line',
     color: '#007CAD',
     directions: {
-      southbound: 'Toward Bellevue',
+      southbound: 'Toward Lynnwood',
       northbound: 'Toward Redmond'
     },
     stationOrder: [
       'downtown_redmond', 'marymoor_village', 'redmond_tech', 'overlake_village',
-      'bel_red', 'spring_district', 'wilburton', 'bellevue_downtown', 'east_main', 'south_bellevue'
+      'bel_red', 'spring_district', 'wilburton', 'bellevue_downtown', 'east_main',
+      'south_bellevue', 'mercer_island', 'judkins_park', 'chinatown', 'pioneer_square',
+      'symphony', 'westlake', 'capitol_hill', 'uw', 'u_district', 'roosevelt',
+      'northgate', 'pinehurst', 'shoreline_south', 'shoreline_north',
+      'mountlake_terrace', 'lynnwood'
     ],
     stations: {
-      'downtown_redmond': { name: 'Downtown Redmond', lat: 47.671467, lon: -122.117864 },
-      'marymoor_village': { name: 'Marymoor Village', lat: 47.667166, lon: -122.110398 },
-      'redmond_tech': { name: 'Redmond Technology', lat: 47.644424, lon: -122.133556 },
-      'overlake_village': { name: 'Overlake Village', lat: 47.636151, lon: -122.139236 },
-      'bel_red': { name: 'BelRed', lat: 47.624499, lon: -122.166364 },
-      'spring_district': { name: 'Spring District', lat: 47.623772, lon: -122.178901 },
-      'wilburton': { name: 'Wilburton', lat: 47.617909, lon: -122.183806 },
-      'east_main': { name: 'East Main', lat: 47.607707, lon: -122.191202 },
-      'bellevue_downtown': { name: 'Bellevue Downtown', lat: 47.615285, lon: -122.192531 },
-      'south_bellevue': { name: 'South Bellevue', lat: 47.586932, lon: -122.190604 }
+      'downtown_redmond': { name: 'Downtown Redmond', lat: 47.671645, lon: -122.118480 },
+      'marymoor_village': { name: 'Marymoor Village', lat: 47.667263, lon: -122.109800 },
+      'redmond_tech': { name: 'Redmond Technology', lat: 47.644842, lon: -122.133628 },
+      'overlake_village': { name: 'Overlake Village', lat: 47.636310, lon: -122.138920 },
+      'bel_red': { name: 'BelRed', lat: 47.624448, lon: -122.165640 },
+      'spring_district': { name: 'Spring District', lat: 47.623773, lon: -122.178573 },
+      'wilburton': { name: 'Wilburton', lat: 47.617967, lon: -122.183762 },
+      'bellevue_downtown': { name: 'Bellevue Downtown', lat: 47.615223, lon: -122.192084 },
+      'east_main': { name: 'East Main', lat: 47.608188, lon: -122.191147 },
+      'south_bellevue': { name: 'South Bellevue', lat: 47.586556, lon: -122.190396 },
+      'mercer_island': { name: 'Mercer Island', lat: 47.588198, lon: -122.233232 },
+      'judkins_park': { name: 'Judkins Park', lat: 47.590299, lon: -122.304508 },
+      'chinatown': { name: "Int'l Dist/Chinatown", lat: 47.598355, lon: -122.327992 },
+      'pioneer_square': { name: 'Pioneer Square', lat: 47.602560, lon: -122.331216 },
+      'symphony': { name: 'Symphony', lat: 47.607810, lon: -122.336020 },
+      'westlake': { name: 'Westlake', lat: 47.611572, lon: -122.336720 },
+      'capitol_hill': { name: 'Capitol Hill', lat: 47.619060, lon: -122.320195 },
+      'uw': { name: 'Univ of Washington', lat: 47.649815, lon: -122.303763 },
+      'u_district': { name: 'U District', lat: 47.660301, lon: -122.314132 },
+      'roosevelt': { name: 'Roosevelt', lat: 47.676595, lon: -122.315976 },
+      'northgate': { name: 'Northgate', lat: 47.703028, lon: -122.328290 },
+      'pinehurst': { name: 'Pinehurst', lat: 47.724043, lon: -122.323851 },
+      'shoreline_south': { name: 'Shoreline South/148th', lat: 47.736095, lon: -122.325227 },
+      'shoreline_north': { name: 'Shoreline North/185th', lat: 47.764067, lon: -122.322889 },
+      'mountlake_terrace': { name: 'Mountlake Terrace', lat: 47.785057, lon: -122.314788 },
+      'lynnwood': { name: 'Lynnwood City Center', lat: 47.815637, lon: -122.294779 }
     }
   }
 };
@@ -779,7 +800,9 @@ function updateUI() {
   
   stationSelect.value = currentStation;
   stationNameEl.textContent = stationsMap[currentStation] ? stationsMap[currentStation].name : currentStation;
-  directionLabel.textContent = currentDirection === 'southbound' ? 'Southbound' : 'Northbound';
+  directionLabel.textContent = (lineData.directions && lineData.directions[currentDirection])
+    ? lineData.directions[currentDirection]
+    : (currentDirection === 'southbound' ? 'Southbound' : 'Northbound');
   renderStationSign(lineData, stationsMap);
   
   // Update line buttons
@@ -886,7 +909,13 @@ function switchLine(newLine) {
     if (nearest && nearest.line === currentLine && nearest.distance < 5000) {
       currentStation = nearest.id;
       currentDistance = nearest.distance;
+    } else {
+      var st = getStations()[currentStation];
+      if (st) {
+        currentDistance = getDistance(userLat, userLon, st.lat, st.lon);
+      }
     }
+    updateWalkTimeDisplay();
   }
   
   savePreferences();

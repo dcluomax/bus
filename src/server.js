@@ -14,42 +14,52 @@ const PORT = process.env.PORT || 3000;
 const OBA_API_KEY = process.env.OBA_API_KEY || 'TEST';
 const OBA_BASE_URL = 'https://api.pugetsound.onebusaway.org/api';
 
-// Sound Transit GTFS-RT feeds (public, no key required)
+// Sound Transit GTFS-RT feeds
 const GTFS_RT_FEEDS = {
-  tripUpdates: 'https://s3.amazonaws.com/kcm-alerts-realtime-prod/tripupdates.pb',
-  vehiclePositions: 'https://s3.amazonaws.com/kcm-alerts-realtime-prod/vehiclepositions.pb',
+  tripUpdates: `${OBA_BASE_URL}/gtfs_realtime/trip-updates-for-agency/40.pb?key=${OBA_API_KEY}`,
+  vehiclePositions: `${OBA_BASE_URL}/gtfs_realtime/vehicle-positions-for-agency/40.pb?key=${OBA_API_KEY}`,
   serviceAlerts: 'https://s3.amazonaws.com/st-service-alerts-prod/alerts.pb'
 };
 
-// Link 1 Line stations (Lynnwood to Federal Way)
+// Link 1 Line stations (Lynnwood City Center to Federal Way Downtown)
+// Platform stop IDs verified against Sound Transit GTFS (dir 0 = southbound to Federal Way, dir 1 = northbound to Lynnwood)
 const LINK_1_LINE_STATIONS = {
   'lynnwood': {
     name: 'Lynnwood City Center',
-    southbound: '40_N23-T1',
-    northbound: '40_N23-T2',
+    stopIds: ['40_N23-T1', '40_N23-T2'],
+    southbound: '40_N23-T2',
+    northbound: '40_N23-T1',
+    outboundDirection: 'southbound',
     lat: 47.815637,
     lon: -122.294779
   },
   'mountlake_terrace': {
     name: 'Mountlake Terrace',
-    southbound: '40_N19-T1',
-    northbound: '40_N19-T2',
+    southbound: '40_N19-T2',
+    northbound: '40_N19-T1',
     lat: 47.785057,
     lon: -122.314788
   },
   'shoreline_north': {
     name: 'Shoreline North/185th',
-    southbound: '40_N17-T1',
-    northbound: '40_N17-T2',
+    southbound: '40_N17-T2',
+    northbound: '40_N17-T1',
     lat: 47.764067,
     lon: -122.322889
   },
   'shoreline_south': {
     name: 'Shoreline South/148th',
-    southbound: '40_N15-T1',
-    northbound: '40_N15-T2',
+    southbound: '40_N15-T2',
+    northbound: '40_N15-T1',
     lat: 47.736095,
     lon: -122.325227
+  },
+  'pinehurst': {
+    name: 'Pinehurst',
+    southbound: '40_N13-T2',
+    northbound: '40_N13-T1',
+    lat: 47.724043,
+    lon: -122.323851
   },
   'northgate': {
     name: 'Northgate',
@@ -81,8 +91,8 @@ const LINK_1_LINE_STATIONS = {
   },
   'capitol_hill': {
     name: 'Capitol Hill',
-    southbound: '40_99603',
-    northbound: '40_99610',
+    southbound: '40_99610',
+    northbound: '40_99603',
     lat: 47.61906,
     lon: -122.320195
   },
@@ -109,8 +119,8 @@ const LINK_1_LINE_STATIONS = {
   },
   'chinatown': {
     name: "Int'l Dist/Chinatown",
-    southbound: '40_621',
-    northbound: '40_623',
+    southbound: '40_623',
+    northbound: '40_621',
     lat: 47.598355,
     lon: -122.327992
   },
@@ -137,29 +147,29 @@ const LINK_1_LINE_STATIONS = {
   },
   'mount_baker': {
     name: 'Mount Baker',
-    southbound: '40_55860',
-    northbound: '40_55949',
+    southbound: '40_55949',
+    northbound: '40_55860',
     lat: 47.57655,
     lon: -122.297679
   },
   'columbia_city': {
     name: 'Columbia City',
-    southbound: '40_55778',
-    northbound: '40_56039',
+    southbound: '40_56039',
+    northbound: '40_55778',
     lat: 47.559733,
     lon: -122.292692
   },
   'othello': {
     name: 'Othello',
-    southbound: '40_55656',
-    northbound: '40_56159',
+    southbound: '40_56159',
+    northbound: '40_55656',
     lat: 47.537987,
     lon: -122.281563
   },
   'rainier_beach': {
     name: 'Rainier Beach',
-    southbound: '40_55578',
-    northbound: '40_56173',
+    southbound: '40_56173',
+    northbound: '40_55578',
     lat: 47.522394,
     lon: -122.279391
   },
@@ -172,130 +182,276 @@ const LINK_1_LINE_STATIONS = {
   },
   'seatac': {
     name: 'SeaTac/Airport',
-    southbound: '40_99903',
-    northbound: '40_99904',
+    southbound: '40_99904',
+    northbound: '40_99903',
     lat: 47.445381,
     lon: -122.296898
   },
   'angle_lake': {
     name: 'Angle Lake',
-    southbound: '40_99913',
-    northbound: '40_99914',
+    southbound: '40_99914',
+    northbound: '40_99913',
     lat: 47.422703,
     lon: -122.297714
   },
   'kent_des_moines': {
     name: 'Kent Des Moines',
-    southbound: '40_S03-T1',
-    northbound: '40_S03-T2',
+    southbound: '40_S03-T2',
+    northbound: '40_S03-T1',
     lat: 47.389552,
     lon: -122.294399
   },
   'star_lake': {
     name: 'Star Lake',
-    southbound: '40_S05-T1',
-    northbound: '40_S05-T2',
+    southbound: '40_S05-T2',
+    northbound: '40_S05-T1',
     lat: 47.359388,
     lon: -122.297391
   },
   'federal_way': {
     name: 'Federal Way Downtown',
-    southbound: '40_S07-T1',
-    northbound: '40_S07-T2',
+    stopIds: ['40_S07-T1', '40_S07-T2'],
+    southbound: '40_S07-T2',
+    northbound: '40_S07-T1',
+    outboundDirection: 'northbound',
     lat: 47.315903,
     lon: -122.303829
   }
 };
 
-// Link 2 Line station info (with correct OBA stop IDs from API)
-// Format: 40_E##-T1 = Southbound (to Bellevue), T2 = Northbound (to Redmond)
+// Link 2 Line stations (Downtown Redmond <-> Bellevue <-> Seattle <-> Lynnwood City Center)
+// southbound = Toward Lynnwood (dir 1 in GTFS), northbound = Toward Redmond (dir 0 in GTFS)
 const LINK_2_LINE_STATIONS = {
   'downtown_redmond': {
     name: 'Downtown Redmond',
     stopIds: ['40_E31-T1', '40_E31-T2'],
     southbound: '40_E31-T1',
-    northbound: '40_E31-T2',
-    lat: 47.671467,
-    lon: -122.117864
+    northbound: '40_E31-T1',
+    outboundDirection: 'southbound',
+    lat: 47.671645,
+    lon: -122.118480
   },
   'marymoor_village': {
     name: 'Marymoor Village',
     stopIds: ['40_E29-T1', '40_E29-T2'],
     southbound: '40_E29-T1',
     northbound: '40_E29-T2',
-    lat: 47.667166,
-    lon: -122.110398
+    lat: 47.667263,
+    lon: -122.109800
   },
   'redmond_tech': {
     name: 'Redmond Technology',
     stopIds: ['40_E27-T1', '40_E27-T2'],
     southbound: '40_E27-T1',
     northbound: '40_E27-T2',
-    lat: 47.644424,
-    lon: -122.133556
+    lat: 47.644842,
+    lon: -122.133628
   },
   'overlake_village': {
     name: 'Overlake Village',
     stopIds: ['40_E25-T1', '40_E25-T2'],
     southbound: '40_E25-T1',
     northbound: '40_E25-T2',
-    lat: 47.636151,
-    lon: -122.139236
+    lat: 47.636310,
+    lon: -122.138920
   },
   'bel_red': {
     name: 'BelRed',
     stopIds: ['40_E23-T1', '40_E23-T2'],
     southbound: '40_E23-T1',
     northbound: '40_E23-T2',
-    lat: 47.624499,
-    lon: -122.166364
+    lat: 47.624448,
+    lon: -122.165640
   },
   'spring_district': {
     name: 'Spring District',
     stopIds: ['40_E21-T1', '40_E21-T2'],
     southbound: '40_E21-T1',
     northbound: '40_E21-T2',
-    lat: 47.623772,
-    lon: -122.178901
+    lat: 47.623773,
+    lon: -122.178573
   },
   'wilburton': {
     name: 'Wilburton',
     stopIds: ['40_E19-T1', '40_E19-T2'],
     southbound: '40_E19-T1',
     northbound: '40_E19-T2',
-    lat: 47.617909,
-    lon: -122.183806
-  },
-  'east_main': {
-    name: 'East Main',
-    stopIds: ['40_E11-T1', '40_E11-T2'],
-    southbound: '40_E11-T1',
-    northbound: '40_E11-T2',
-    lat: 47.607707,
-    lon: -122.191202
+    lat: 47.617967,
+    lon: -122.183762
   },
   'bellevue_downtown': {
     name: 'Bellevue Downtown',
     stopIds: ['40_E15-T1', '40_E15-T2'],
     southbound: '40_E15-T1',
     northbound: '40_E15-T2',
-    lat: 47.615285,
-    lon: -122.192531
+    lat: 47.615223,
+    lon: -122.192084
+  },
+  'east_main': {
+    name: 'East Main',
+    stopIds: ['40_E11-T1', '40_E11-T2'],
+    southbound: '40_E11-T1',
+    northbound: '40_E11-T2',
+    lat: 47.608188,
+    lon: -122.191147
   },
   'south_bellevue': {
     name: 'South Bellevue',
     stopIds: ['40_E09-T1', '40_E09-T2'],
     southbound: '40_E09-T1',
     northbound: '40_E09-T2',
-    lat: 47.586932,
-    lon: -122.190604
+    lat: 47.586556,
+    lon: -122.190396
+  },
+  'mercer_island': {
+    name: 'Mercer Island',
+    stopIds: ['40_E07-T1', '40_E07-T2'],
+    southbound: '40_E07-T1',
+    northbound: '40_E07-T2',
+    lat: 47.588198,
+    lon: -122.233232
+  },
+  'judkins_park': {
+    name: 'Judkins Park',
+    stopIds: ['40_E01-T1', '40_E01-T2'],
+    southbound: '40_E01-T1',
+    northbound: '40_E01-T2',
+    lat: 47.590299,
+    lon: -122.304508
+  },
+  'chinatown': {
+    name: "Int'l Dist/Chinatown",
+    stopIds: ['40_621', '40_623'],
+    southbound: '40_621',
+    northbound: '40_623',
+    lat: 47.598355,
+    lon: -122.327992
+  },
+  'pioneer_square': {
+    name: 'Pioneer Square',
+    stopIds: ['40_532', '40_501'],
+    southbound: '40_532',
+    northbound: '40_501',
+    lat: 47.602560,
+    lon: -122.331216
+  },
+  'symphony': {
+    name: 'Symphony',
+    stopIds: ['40_565', '40_455'],
+    southbound: '40_565',
+    northbound: '40_455',
+    lat: 47.607810,
+    lon: -122.336020
+  },
+  'westlake': {
+    name: 'Westlake',
+    stopIds: ['40_1121', '40_1108'],
+    southbound: '40_1121',
+    northbound: '40_1108',
+    lat: 47.611572,
+    lon: -122.336720
+  },
+  'capitol_hill': {
+    name: 'Capitol Hill',
+    stopIds: ['40_99603', '40_99610'],
+    southbound: '40_99603',
+    northbound: '40_99610',
+    lat: 47.619060,
+    lon: -122.320195
+  },
+  'uw': {
+    name: 'Univ of Washington',
+    stopIds: ['40_99605', '40_99604'],
+    southbound: '40_99605',
+    northbound: '40_99604',
+    lat: 47.649815,
+    lon: -122.303763
+  },
+  'u_district': {
+    name: 'U District',
+    stopIds: ['40_990002', '40_990001'],
+    southbound: '40_990002',
+    northbound: '40_990001',
+    lat: 47.660301,
+    lon: -122.314132
+  },
+  'roosevelt': {
+    name: 'Roosevelt',
+    stopIds: ['40_990004', '40_990003'],
+    southbound: '40_990004',
+    northbound: '40_990003',
+    lat: 47.676595,
+    lon: -122.315976
+  },
+  'northgate': {
+    name: 'Northgate',
+    stopIds: ['40_990006', '40_990005'],
+    southbound: '40_990006',
+    northbound: '40_990005',
+    lat: 47.703028,
+    lon: -122.328290
+  },
+  'pinehurst': {
+    name: 'Pinehurst',
+    stopIds: ['40_N13-T1', '40_N13-T2'],
+    southbound: '40_N13-T1',
+    northbound: '40_N13-T2',
+    lat: 47.724043,
+    lon: -122.323851
+  },
+  'shoreline_south': {
+    name: 'Shoreline South/148th',
+    stopIds: ['40_N15-T1', '40_N15-T2'],
+    southbound: '40_N15-T1',
+    northbound: '40_N15-T2',
+    lat: 47.736095,
+    lon: -122.325227
+  },
+  'shoreline_north': {
+    name: 'Shoreline North/185th',
+    stopIds: ['40_N17-T1', '40_N17-T2'],
+    southbound: '40_N17-T1',
+    northbound: '40_N17-T2',
+    lat: 47.764067,
+    lon: -122.322889
+  },
+  'mountlake_terrace': {
+    name: 'Mountlake Terrace',
+    stopIds: ['40_N19-T1', '40_N19-T2'],
+    southbound: '40_N19-T1',
+    northbound: '40_N19-T2',
+    lat: 47.785057,
+    lon: -122.314788
+  },
+  'lynnwood': {
+    name: 'Lynnwood City Center',
+    stopIds: ['40_N23-T1', '40_N23-T2'],
+    southbound: '40_N23-T1',
+    northbound: '40_N23-T2',
+    outboundDirection: 'northbound',
+    lat: 47.815637,
+    lon: -122.294779
   }
 };
 
-// Route IDs for Link Light Rail
+// Route IDs for Link Light Rail (GTFS-RT omits the '40_' agency prefix that OBA includes)
 const LINK_ROUTES = {
-  '1_Line': '40_100479',  // 1 Line (Blue)
-  '2_Line': '40_2LINE'    // 2 Line (Red) - East Link
+  '1_line': {
+    ids: new Set(['100479', '40_100479']),
+    shortName: '1 Line',
+    defaultHeadsigns: {
+      southbound: 'Federal Way Downtown',
+      northbound: 'Lynnwood City Center'
+    }
+  },
+  '2_line': {
+    ids: new Set(['2LINE', '40_2LINE']),
+    shortName: '2 Line',
+    defaultHeadsigns: {
+      southbound: 'Lynnwood City Center',
+      northbound: 'Downtown Redmond'
+    }
+  }
 };
 
 // Combined all lines
@@ -314,11 +470,22 @@ const ALL_LINES = {
     color: '#007CAD',
     stations: LINK_2_LINE_STATIONS,
     directions: {
-      southbound: 'Southbound (to Bellevue)',
-      northbound: 'Northbound (to Redmond)'
+      southbound: 'Toward Lynnwood',
+      northbound: 'Toward Redmond'
     }
   }
 };
+
+const STOP_ID_TO_STATION_NAME = new Map();
+for (const stations of [LINK_1_LINE_STATIONS, LINK_2_LINE_STATIONS]) {
+  for (const st of Object.values(stations)) {
+    for (const id of [st.southbound, st.northbound, ...(st.stopIds || [])]) {
+      if (!id) continue;
+      STOP_ID_TO_STATION_NAME.set(id, st.name);
+      STOP_ID_TO_STATION_NAME.set(id.replace(/^40_/, ''), st.name);
+    }
+  }
+}
 
 app.use(express.static(path.join(__dirname, '../public')));
 app.use(express.json());
@@ -374,68 +541,132 @@ async function fetchGtfsRt(url) {
   }
 }
 
-// Get arrivals for a specific stop using OneBusAway API (with cache)
+// Pace uncached OBA calls to respect public TEST key rate limits and dedupe concurrent stop requests
+const OBA_MIN_INTERVAL_MS = 1100;
+let obaQueue = Promise.resolve();
+let lastObaCallAt = 0;
+const obaInFlight = new Map();
+
+function enqueueObaFetch(fn) {
+  const run = obaQueue.then(async () => {
+    const waitMs = Math.max(0, lastObaCallAt + OBA_MIN_INTERVAL_MS - Date.now());
+    if (waitMs > 0) {
+      await new Promise(resolve => setTimeout(resolve, waitMs));
+    }
+    lastObaCallAt = Date.now();
+    return fn();
+  });
+  obaQueue = run.catch(() => {});
+  return run;
+}
+
+// Get arrivals for a specific stop using OneBusAway API (with cache + pacing)
 async function getArrivalsFromOBA(stopId) {
-  // Check cache first
   const cacheKey = `oba:${stopId}`;
   const cached = getCached(cacheKey);
   if (cached) {
     return cached;
   }
-  
-  const url = `${OBA_BASE_URL}/where/arrivals-and-departures-for-stop/${stopId}.json?key=${OBA_API_KEY}&minutesBefore=0&minutesAfter=60`;
-  
-  try {
-    const response = await fetch(url);
-    if (!response.ok) {
-      throw new Error(`OBA API error: ${response.status}`);
-    }
-    const data = await response.json();
-    setCache(cacheKey, data);
-    return data;
-  } catch (error) {
-    console.error(`Error fetching OBA arrivals for ${stopId}:`, error.message);
-    return null;
+  if (obaInFlight.has(cacheKey)) {
+    return obaInFlight.get(cacheKey);
   }
+
+  const url = `${OBA_BASE_URL}/where/arrivals-and-departures-for-stop/${stopId}.json?key=${OBA_API_KEY}&minutesBefore=0&minutesAfter=60`;
+
+  const promise = enqueueObaFetch(async () => {
+    try {
+      let response = await fetch(url);
+      if (response.status === 429) {
+        await new Promise(resolve => setTimeout(resolve, 1500));
+        lastObaCallAt = Date.now();
+        response = await fetch(url);
+      }
+      if (!response.ok) {
+        throw new Error(`OBA API error: ${response.status}`);
+      }
+      const data = await response.json();
+      setCache(cacheKey, data);
+      return data;
+    } catch (error) {
+      console.error(`Error fetching OBA arrivals for ${stopId}:`, error.message);
+      return null;
+    } finally {
+      obaInFlight.delete(cacheKey);
+    }
+  });
+
+  obaInFlight.set(cacheKey, promise);
+  return promise;
 }
 
 // Parse trip updates for specific stops
-function parseTripUpdates(feed, targetStopIds) {
+function parseTripUpdates(feed, targetStopIds, lineId, direction, stationName) {
   const arrivals = [];
-  
   if (!feed || !feed.entity) return arrivals;
-  
+
+  const targetNormalized = new Set(targetStopIds.map(id => id.replace(/^40_/, '')));
+  const routeMeta = LINK_ROUTES[lineId];
+
   for (const entity of feed.entity) {
     if (!entity.tripUpdate) continue;
-    
+
     const tripUpdate = entity.tripUpdate;
     const trip = tripUpdate.trip;
-    
-    for (const stopTimeUpdate of tripUpdate.stopTimeUpdate || []) {
-      const stopId = stopTimeUpdate.stopId;
-      
-      if (targetStopIds.includes(stopId)) {
-        const arrival = stopTimeUpdate.arrival;
-        const departure = stopTimeUpdate.departure;
-        
-        arrivals.push({
-          tripId: trip?.tripId || 'unknown',
-          routeId: trip?.routeId || 'unknown',
-          directionId: trip?.directionId,
-          stopId: stopId,
-          arrivalTime: arrival?.time ? Number(arrival.time) * 1000 : null,
-          arrivalDelay: arrival?.delay || 0,
-          departureTime: departure?.time ? Number(departure.time) * 1000 : null,
-          departureDelay: departure?.delay || 0,
-          scheduleRelationship: stopTimeUpdate.scheduleRelationship
-        });
+    const routeId = trip?.routeId || '';
+    if (routeMeta && !routeMeta.ids.has(routeId)) continue;
+
+    const stus = tripUpdate.stopTimeUpdate || [];
+    if (stus.length === 0) continue;
+
+    const lastStopRaw = stus[stus.length - 1]?.stopId || '';
+    const lastStopName = STOP_ID_TO_STATION_NAME.get(lastStopRaw) || STOP_ID_TO_STATION_NAME.get(`40_${lastStopRaw}`);
+    const fallbackHeadsign = routeMeta?.defaultHeadsigns?.[direction] || '';
+    const tripHeadsign = lastStopName || fallbackHeadsign;
+
+    for (let idx = 0; idx < stus.length; idx++) {
+      const stopTimeUpdate = stus[idx];
+      const stopIdRaw = stopTimeUpdate.stopId || '';
+      const stopIdNorm = stopIdRaw.replace(/^40_/, '');
+      if (!targetNormalized.has(stopIdNorm)) continue;
+
+      const arrival = stopTimeUpdate.arrival;
+      const departure = stopTimeUpdate.departure;
+      const eventTimeSec = departure?.time || arrival?.time;
+      const arrivalTime = arrival?.time ? Number(arrival.time) * 1000 : (eventTimeSec ? Number(eventTimeSec) * 1000 : null);
+      const departureTime = departure?.time ? Number(departure.time) * 1000 : arrivalTime;
+      const arrivalDelay = arrival?.delay || 0;
+      const departureDelay = departure?.delay || 0;
+
+      // At a terminus, ignore trains ending their run there when querying outbound departures
+      const isLastStop = idx === stus.length - 1;
+      if (isLastStop && stationName && tripHeadsign === stationName) {
+        const stationInfo = ALL_LINES[lineId]?.stations?.[Object.keys(ALL_LINES[lineId]?.stations || {}).find(k => ALL_LINES[lineId].stations[k].name === stationName)];
+        if (stationInfo?.outboundDirection === direction) {
+          continue;
+        }
       }
+
+      arrivals.push({
+        tripId: trip?.tripId || 'unknown',
+        routeId: routeId || 'unknown',
+        routeShortName: routeMeta?.shortName || routeId,
+        tripHeadsign,
+        directionId: trip?.directionId,
+        stopId: stopIdRaw.startsWith('40_') ? stopIdRaw : `40_${stopIdRaw}`,
+        arrivalTime,
+        scheduledArrivalTime: arrivalTime && arrivalDelay ? arrivalTime - arrivalDelay * 1000 : arrivalTime,
+        predictedArrivalTime: arrivalTime,
+        arrivalDelay,
+        departureTime,
+        departureDelay,
+        predicted: true,
+        vehicleId: tripUpdate.vehicle?.id || null,
+        scheduleRelationship: stopTimeUpdate.scheduleRelationship
+      });
     }
   }
-  
-  // Sort by arrival time
+
   arrivals.sort((a, b) => (a.arrivalTime || Infinity) - (b.arrivalTime || Infinity));
-  
   return arrivals;
 }
 
@@ -519,24 +750,34 @@ app.get('/api/arrivals/:stationId', async (req, res) => {
   }
   
   // Determine which stop IDs to query
-  let targetStopIds = station.stopIds;
-  if (direction === 'southbound' && station.southbound) {
+  let targetStopIds = station.stopIds || [station.southbound, station.northbound].filter(Boolean);
+  if (station.outboundDirection === direction && station.stopIds) {
+    targetStopIds = station.stopIds;
+  } else if (direction === 'southbound' && station.southbound) {
     targetStopIds = [station.southbound];
   } else if (direction === 'northbound' && station.northbound) {
     targetStopIds = [station.northbound];
   }
-  
+
+  const expectedRoutes = LINK_ROUTES[lineId]?.ids;
+
   try {
-    // Try GTFS-RT first
+    // Try Sound Transit agency GTFS-RT feed first (single cached call)
     const feed = await fetchGtfsRt(GTFS_RT_FEEDS.tripUpdates);
-    let arrivals = parseTripUpdates(feed, targetStopIds);
-    
-    // If no GTFS-RT data, try OBA API
-    if (arrivals.length === 0) {
+    let arrivals = parseTripUpdates(feed, targetStopIds, lineId, direction, station.name);
+
+    // Enrich or fall back to OBA stop API when GTFS-RT yields few or no upcoming trips
+    if (arrivals.length < 3) {
       for (const stopId of targetStopIds) {
         const obaData = await getArrivalsFromOBA(stopId);
         if (obaData?.data?.entry?.arrivalsAndDepartures) {
           for (const arrival of obaData.data.entry.arrivalsAndDepartures) {
+            if (expectedRoutes && arrival.routeId && !expectedRoutes.has(arrival.routeId)) {
+              continue;
+            }
+            if (station.outboundDirection === direction && arrival.tripHeadsign === station.name) {
+              continue;
+            }
             arrivals.push({
               tripId: arrival.tripId,
               routeId: arrival.routeId,
@@ -555,22 +796,26 @@ app.get('/api/arrivals/:stationId', async (req, res) => {
         }
       }
     }
-    
+
     // Sort and filter to upcoming arrivals only
     const now = Date.now();
-    
-    // Deduplicate by tripId - keep the one with real-time data if available
+
+    // Deduplicate by normalized tripId (GTFS-RT omits '40_' prefix that OBA includes)
     const tripMap = new Map();
     for (const arrival of arrivals) {
-      const key = arrival.tripId;
+      const key = String(arrival.tripId || '').replace(/^40_/, '');
       const existing = tripMap.get(key);
       if (!existing) {
         tripMap.set(key, arrival);
-      } else {
-        // Keep the one with predicted data (real-time)
-        if (arrival.predicted && !existing.predicted) {
-          tripMap.set(key, arrival);
-        }
+      } else if (arrival.scheduledArrivalTime && !existing.arrivalDelay) {
+        tripMap.set(key, {
+          ...existing,
+          scheduledArrivalTime: arrival.scheduledArrivalTime,
+          tripHeadsign: arrival.tripHeadsign || existing.tripHeadsign,
+          predicted: arrival.predicted || existing.predicted
+        });
+      } else if (arrival.predicted && !existing.predicted) {
+        tripMap.set(key, arrival);
       }
     }
     arrivals = Array.from(tripMap.values());
